@@ -290,17 +290,14 @@
   </main>
  <div class="actions">
       <input type="file" id="fileInputXLSX" class="mini" accept=".xlsx,.xls" />
-      <button class="btn secondary" style="background:#BDB76B; type="button" onclick="cargarExcel()">
-        📁 Cargar EXCEL
-      </button>
-      <button class="btn ok" style="background:#006400; type="button" onclick="generarROA()">
-        ⬇️ Descargar R.O.A.
-      </button>
-<button style="background:#0000FF; class="btn ok" type="button" onclick="refrescarFuerte()">⟲ Refrescar</button>
 
-    </div>
+   <button class="btn secondary" type="button" style="background:#BDB76B" onclick="cargarExcel()">📁 Cargar EXCEL</button>
+<button class="btn ok"        type="button" style="background:#006400" onclick="generarROA()">⬇️ Descargar R.O.A.</button>
+<button class="btn warn"      type="button" style="background:#0000FF" onclick="refrescarFuerte()">⟲ Refrescar</button>
+ 
+ </div>
 
-</script>
+
 <script>
 (function () {
     // Salida con TILDES para que cuadre con tus name/keys del formulario y ODT

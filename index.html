@@ -5,20 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>R.O.A. – Carga desde Excel y Generación ODT</title>
 
- <script src="./jszip.min.js" defer></script>
-<script src="./FileSaver.min.js" defer></script>
-<script src="./xlsx.full.min.js" defer></script>
-<script src="./plantilla_roa.js" defer></script>
+  <!-- Librerías (defer para cargarlas sin bloquear y en orden) -->
+  <script src="./jszip.min.js" defer></script>
+  <script src="./FileSaver.min.js" defer></script>
+  <script src="./xlsx.full.min.js" defer></script>
+  <script src="./plantilla_roa.js" defer></script>
 
   <style>
     :root{
-      --bg:#0f172a;        /* pizarra oscura */
-      --panel:#0b1222;     /* panel */
-      --text:#e5e7eb;      /* texto */
-      --muted:#9ca3af;     /* gris */
-      --primary:#2563eb;   /* azul */
-      --primary-2:#1d4ed8; /* azul oscuro */
-      --accent:#14b8a6;    /* cian */
+      --bg:#0f172a;
+      --panel:#0b1222;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --primary:#2563eb;
+      --primary-2:#1d4ed8;
+      --accent:#14b8a6;
       --card:#111827;
       --border:#243042;
       --radius:12px;
@@ -32,21 +33,14 @@
       display:flex; flex-direction:column;
     }
 
-    header{
-      width:100%;
-      padding:16px 24px 0;
-    }
+    header{ width:100%; padding:16px 24px 0; }
     .title{
       max-width:1600px; margin:0 auto;
-      display:flex; align-items:center; justify-content:center;
-      gap:16px;
+      display:flex; align-items:center; justify-content:center; gap:16px;
     }
     .title h1{
-      margin:0;
-      font-size:28px; font-weight:800;
-      letter-spacing:.5px;
-      color:#cfe3ff;
-      text-shadow:0 2px 14px rgba(29,78,216,.55);
+      margin:0; font-size:28px; font-weight:800; letter-spacing:.5px;
+      color:#cfe3ff; text-shadow:0 2px 14px rgba(29,78,216,.55);
     }
 
     .actions{
@@ -66,46 +60,30 @@
     .btn.ok{ background:#15803d; border-color:#166534; }
     .btn.warn{ background:#b45309; border-color:#166534; }
 
-    main{
-      width:100%;
-      margin:16px 0 40px;
-      display:flex; justify-content:center;
-    }
+    main{ width:100%; margin:16px 0 40px; display:flex; justify-content:center; }
     .wrap{
       width:clamp(1100px, 95vw, 1600px);
       background:linear-gradient(180deg, rgba(8,15,30,.7), rgba(8,15,30,.85));
       border:1px solid var(--border);
       box-shadow:0 30px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
-      border-radius:16px;
-      padding:22px 26px;
+      border-radius:16px; padding:22px 26px;
     }
 
     h2{
-      margin:18px 0 8px;
-      font-size:18px; letter-spacing:.4px; text-transform:uppercase;
-      color:#b9d3ff;
-      display:flex; align-items:center; gap:10px;
-      border-bottom:2px solid #1f3b69;
-      padding-bottom:6px;
+      margin:18px 0 8px; font-size:18px; letter-spacing:.4px; text-transform:uppercase;
+      color:#b9d3ff; display:flex; align-items:center; gap:10px;
+      border-bottom:2px solid #1f3b69; padding-bottom:6px;
     }
 
-    .grid{
-      display:grid; gap:10px;
-      grid-template-columns: repeat(4, minmax(180px,1fr));
-    }
-    @media (max-width: 1280px){
-      .grid{ grid-template-columns: repeat(3, minmax(180px,1fr)); }
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: repeat(2, minmax(180px,1fr)); }
-    }
+    .grid{ display:grid; gap:10px; grid-template-columns: repeat(4, minmax(180px,1fr)); }
+    @media (max-width: 1280px){ .grid{ grid-template-columns: repeat(3, minmax(180px,1fr)); } }
+    @media (max-width: 980px){ .grid{ grid-template-columns: repeat(2, minmax(180px,1fr)); } }
 
     .card{
       background:linear-gradient(180deg, #0c1428, #0a1121);
       border:1px solid var(--border);
       border-radius:10px; padding:10px 10px 8px;
-      display:flex; flex-direction:column; gap:6px;
-      min-height:64px;
+      display:flex; flex-direction:column; gap:6px; min-height:64px;
     }
     label{
       font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px;
@@ -114,18 +92,14 @@
     input, select, textarea{
       width:100%; padding:7px 8px;
       border-radius:8px; border:1px solid #2a3955; background:#f8fafc;
-      color:#0b1222; font-size:14px;
-      outline:none;
+      color:#0b1222; font-size:14px; outline:none;
     }
     textarea{ min-height:64px; resize:vertical; }
     input:focus, select:focus, textarea:focus{ box-shadow:0 0 0 2px rgba(100,180,255,.25); border-color:#4b86df; }
 
     .full{ grid-column: 1 / -1; }
 
-    #message{
-      margin-top:12px; text-align:center; font-weight:700; color:#bfe5ff;
-      min-height: 24px;
-    }
+    #message{ margin-top:12px; text-align:center; font-weight:700; color:#bfe5ff; min-height: 24px; }
 
     .mini{ display:none }
   </style>
@@ -136,7 +110,6 @@
     <div class="title">
       <h1>RESUMEN OPERATIVO ARCHIVA (R.O.A.)</h1>
     </div>
-   
   </header>
 
   <main>
@@ -161,65 +134,22 @@
           <input type="text" id="numeroDocumento" name="NÚMERO DE DOCUMENTO">
         </div>
 
-        <div class="card">
-          <label>Nombre</label>
-          <input type="text" name="NOMBRE">
-        </div>
-
-        <div class="card">
-          <label>Primer apellido</label>
-          <input type="text" name="PRIMER APELLIDO">
-        </div>
-
-        <div class="card">
-          <label>Segundo apellido</label>
-          <input type="text" name="SEGUNDO APELLIDO">
-        </div>
-
-        <div class="card">
-          <label>Fecha de nacimiento</label>
-          <input type="text" name="FECHA DE NACIMIENTO" placeholder="DD/MM/AAAA">
-        </div>
-
-        <div class="card">
-          <label>Lugar de nacimiento</label>
-          <input type="text" name="LUGAR DE NACIMIENTO">
-        </div>
-
-        <div class="card">
-          <label>Provincia</label>
-          <input type="text" name="PROVINCIA">
-        </div>
-
-        <div class="card">
-          <label>PAÍS</label>
-          <input type="text" name="PAÍS">
-        </div>
-
-        <div class="card">
-          <label>NACIONALIDAD</label>
-          <input type="text" name="NACIONALIDAD">
-        </div>
-
-        <div class="card">
-          <label>Nombre de los padres</label>
-          <input type="text" name="NOMBRE DE LOS PADRES">
-        </div>
-
-        <div class="card">
-          <label>PROFESIÓN</label>
-          <input type="text" name="PROFESIÓN">
-        </div>
+        <div class="card"><label>Nombre</label><input type="text" name="NOMBRE"></div>
+        <div class="card"><label>Primer apellido</label><input type="text" name="PRIMER APELLIDO"></div>
+        <div class="card"><label>Segundo apellido</label><input type="text" name="SEGUNDO APELLIDO"></div>
+        <div class="card"><label>Fecha de nacimiento</label><input type="text" name="FECHA DE NACIMIENTO" placeholder="DD/MM/AAAA"></div>
+        <div class="card"><label>Lugar de nacimiento</label><input type="text" name="LUGAR DE NACIMIENTO"></div>
+        <div class="card"><label>Provincia</label><input type="text" name="PROVINCIA"></div>
+        <div class="card"><label>PAÍS</label><input type="text" name="PAÍS"></div>
+        <div class="card"><label>NACIONALIDAD</label><input type="text" name="NACIONALIDAD"></div>
+        <div class="card"><label>Nombre de los padres</label><input type="text" name="NOMBRE DE LOS PADRES"></div>
+        <div class="card"><label>PROFESIÓN</label><input type="text" name="PROFESIÓN"></div>
       </div>
 
       <!-- Apartado 2 -->
       <h2>📂 Entorno y Actividad</h2>
       <div class="grid">
-<div class="card">
-  <label>Teléfono</label>
-  <input type="text" name="TELÉFONO" placeholder="TELÉFONO">
-</div>
-
+        <div class="card"><label>Teléfono</label><input type="text" name="TELÉFONO" placeholder="TELÉFONO"></div>
         <div class="card"><label>Armas</label><input type="text" name="ARMAS"></div>
         <div class="card"><label>Alias</label><input type="text" name="ALIAS"></div>
         <div class="card"><label>Consortes</label><input type="text" name="CONSORTES"></div>
@@ -233,14 +163,14 @@
       <!-- Apartado 3 -->
       <h2>🧬 Rasgos físicos</h2>
       <div class="grid">
-
-<div class="card"><label>Sexo</label>
-  <select name="SEXO" id="sexo">
-    <option value="">--</option>
-    <option value="H">Masculino</option>
-    <option value="M">Femenino</option>
-  </select>
-</div>
+        <div class="card">
+          <label>Sexo</label>
+          <select name="SEXO" id="sexo">
+            <option value="">--</option>
+            <option value="H">Masculino</option>
+            <option value="M">Femenino</option>
+          </select>
+        </div>
 
         <div class="card"><label>Talla</label><input type="text" name="TALLA"></div>
         <div class="card"><label>Complexión</label><input type="text" name="COMPLEXION"></div>
@@ -285,19 +215,18 @@
       <div id="message"></div>
     </div>
   </main>
- <div class="actions">
-      <input type="file" id="fileInputXLSX" class="mini" accept=".xlsx,.xls" />
 
-   <button class="btn secondary" type="button" style="background:#BDB76B" onclick="cargarExcel()">📁 Cargar EXCEL</button>
-<button class="btn ok"        type="button" style="background:#006400" onclick="generarROA()">⬇️ Descargar R.O.A.</button>
-<button class="btn warn"      type="button" style="background:#0000FF" onclick="refrescarFuerte()">⟲ Refrescar</button>
- 
- </div>
+  <!-- Botones abajo -->
+  <div class="actions">
+    <input type="file" id="fileInputXLSX" class="mini" accept=".xlsx,.xls" />
+    <button class="btn secondary" type="button" style="background:#BDB76B" onclick="cargarExcel()">📁 Cargar EXCEL</button>
+    <button class="btn ok"        type="button" style="background:#006400" onclick="generarROA()">⬇️ Descargar R.O.A.</button>
+    <button class="btn warn"      type="button" style="background:#0000FF" onclick="refrescarFuerte()">⟲ Refrescar</button>
+  </div>
 
-
-<script>
-(function () {
-    // Salida con TILDES para que cuadre con tus name/keys del formulario y ODT
+  <!-- Normalizador de placeholders rotos -->
+  <script>
+  (function () {
     const FIELD_MAP = {
       "PAÍS": ["PAIS", "PAÍS"],
       "NACIONALIDAD": ["NACIONALIDAD"],
@@ -305,12 +234,10 @@
       "PROFESIÓN": ["PROFESION","PROFESIÓN"],
       "TIPO DOCUMENTO": ["TIPO DOCUMENTO","TIPO DE DOCUMENTO"]
     };
-
     const stripAccents = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     const SEP = String.raw`(?:\s|<[^>]+>|&nbsp;)*`;
     const lettersPat = s => s.split('').map(ch => esc(ch)).join(SEP);
-
     function makeBrokenTokenRx(token){
       const up = token.toUpperCase();
       const upNoAcc = stripAccents(up);
@@ -323,39 +250,35 @@
       const tight = new RegExp(String.raw`\{\{\s*${esc(outKey)}\s*\}\}`,'gi');
       return html.replace(tight, `{{${outKey}}}`);
     }
-
-    const root = document.body; // si tienes un contenedor, usa document.getElementById('...')
-
+    const root = document.body;
     let html = root.innerHTML;
     for(const [outKey, variants] of Object.entries(FIELD_MAP)){
       html = normalizeHtml(html, outKey, variants);
     }
     root.innerHTML = html;
   })();
+  </script>
 
-   
-
-async function refrescarFuerte(){
-  try{
-    // Borra cachés
-    if ('caches' in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-    // Desregistra SW
-    if ('serviceWorker' in navigator){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-  }catch(e){ /* ignoramos errores */ }
-  // Recarga
-  window.location.reload();
-}
+  <!-- Tu script principal -->
+  <script>
+  async function refrescarFuerte(){
+    try{
+      if ('caches' in window){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    }catch(e){}
+    window.location.reload();
+  }
 
   // ============ Helpers ============
   function norm(s){
     return String(s ?? "")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // sin tildes
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .replace(/º|°/g,"O")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g,"")
@@ -383,7 +306,7 @@ async function refrescarFuerte(){
     return s;
   }
 
-  // ============ Aliases de campos para carga desde Excel ============
+  // ============ Aliases Excel ============
   const FIELD_ALIASES = new Map([
     ["NOMBRE","NOMBRE"],["NOMBRES","NOMBRE"],
     ["LUGARDENACIMIENTO","LUGAR DE NACIMIENTO"],["LUGARNACIMIENTO","LUGAR DE NACIMIENTO"],
@@ -444,7 +367,7 @@ async function refrescarFuerte(){
     el.value = (valor ?? "").toString().trim();
   }
 
-  // ============ Lectura Excel ============
+  // ============ Lectura Excel (robusto) ============
   function rowsToPairs(rows){
     if(!Array.isArray(rows) || !rows.length) return [];
     const nonEmptyLens = rows.map(r => (Array.isArray(r)? r : []).filter(c => String(c ?? '').trim() !== '').length);
@@ -462,101 +385,137 @@ async function refrescarFuerte(){
     input.value = null;
     input.click();
 
-    input.onchange = async (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
+    input.onchange = function (e) {
+      // Comprobar librería
+      if (typeof XLSX === "undefined") {
+        document.getElementById("message").innerText = "❌ XLSX no está cargado. Revisa la ruta de xlsx.full.min.js.";
+        return;
+      }
 
-      try {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, {type:"array"});
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header:1 });
+      var file = (e && e.target && e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+      if (!file) {
+        document.getElementById("message").innerText = "⚠️ No se seleccionó ningún archivo.";
+        return;
+      }
 
-        const pairs = rowsToPairs(rows);
-        let rellenados = 0;
-        let fechaGeneracionExcel = "";
+      function procesarBuf(buf) {
+        try {
+          var wb = XLSX.read(buf, { type: "array" });
+          if (!wb.SheetNames || wb.SheetNames.length === 0) {
+            document.getElementById("message").innerText = "⚠️ El Excel no tiene hojas.";
+            return;
+          }
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          if (!sheet) {
+            document.getElementById("message").innerText = "⚠️ La primera hoja está vacía.";
+            return;
+          }
+          var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: "" });
 
-        for(const [campo, valor] of pairs){
-          if(!campo) continue;
-          const key = String(campo).trim();
-          let v = valor;
+          const pairs = rowsToPairs(rows);
+          let rellenados = 0;
+          let fechaGeneracionExcel = "";
 
-          // SEXO (masculino/femenino → H/M)
-          if (isKey(key, ["SEXO","GENERO"])) {
-            const val = String(v || "").trim().toUpperCase();
-            const el = document.getElementById("sexo");
-            if (el) {
-              if (val.startsWith("H") || val.includes("MASC")) el.value = "H";
-              else if (val.startsWith("M") || val.includes("FEM")) el.value = "M";
+          for (var i = 0; i < pairs.length; i++) {
+            var campo = pairs[i][0];
+            var valor = pairs[i][1];
+            if (!campo) continue;
+            const key = String(campo).trim();
+            let v = valor;
+
+            // SEXO
+            if (isKey(key, ["SEXO","GENERO"])) {
+              const val = String(v || "").trim().toUpperCase();
+              const el = document.getElementById("sexo");
+              if (el) {
+                if (val.startsWith("H") || val.indexOf("MASC") >= 0) el.value = "H";
+                else if (val.startsWith("M") || val.indexOf("FEM") >= 0) el.value = "M";
+              }
+              rellenados++; continue;
             }
-            rellenados++; continue;
-          }
-          // TELEFONO
-          if (isKey(key, ["TELEFONO","TELÉFONO","TLF","MOVIL","MÓVIL","CELULAR"])) {
-            const el = findFieldByKey("TELEFONO");
-            if (el) { el.value = (v ?? "").toString(); rellenados++; }
-            continue;
-          }
-          // FECHA GENERACION
-          if(isKey(key, ["FECHA GENERACION","FECHA DE GENERACION","FECHA_GENERACION"])){
-            fechaGeneracionExcel = ddmmyyyy_from_excel(v); continue;
-          }
-          // TIPO DOCUMENTO
-          if(isKey(key, ["TIPO DOCUMENTO","TIPO DE DOCUMENTO","TIPO_DOC","TIPO"])){
-            setTipoDocumentoDesdeExcel(v); rellenados++; continue;
-          }
-          // Nº DOCUMENTO
-          if(isKey(key, [
-            "Nº DOCUMENTO","NºDOCUMENTO","NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO",
-            "NUMERO DOCUMENTO","NÚMERO DOCUMENTO","N DOC","N DOCUMENTO","NDOCUMENTO",
-            "NUMERODEDOCUMENTO","NDOC"
-          ])){
-            setNumeroDocumentoDesdeExcel(v); rellenados++; continue;
-          }
-          // APELLIDOS (divide)
-          if(isKey(key, ["APELLIDOS"])){
-            const s = String(v||"").trim();
-            if(s){
-              const partes = s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
-              const primero = findFieldByName("PRIMER APELLIDO");
-              const segundo = findFieldByName("SEGUNDO APELLIDO");
-              if(primero){ primero.value = (partes[0]||""); rellenados++; }
-              if(segundo){ segundo.value = (partes[1]||""); rellenados++; }
+            // TELEFONO
+            if (isKey(key, ["TELEFONO","TELÉFONO","TLF","MOVIL","MÓVIL","CELULAR"])) {
+              const el = findFieldByKey("TELEFONO");
+              if (el) { el.value = (v ?? "").toString(); rellenados++; }
+              continue;
             }
-            continue;
+            // FECHA GENERACION
+            if (isKey(key, ["FECHA GENERACION","FECHA DE GENERACION","FECHA_GENERACION"])) {
+              fechaGeneracionExcel = ddmmyyyy_from_excel(v); continue;
+            }
+            // TIPO DOCUMENTO
+            if (isKey(key, ["TIPO DOCUMENTO","TIPO DE DOCUMENTO","TIPO_DOC","TIPO"])) {
+              setTipoDocumentoDesdeExcel(v); rellenados++; continue;
+            }
+            // Nº DOCUMENTO
+            if (isKey(key, [
+              "Nº DOCUMENTO","NºDOCUMENTO","NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO",
+              "NUMERO DOCUMENTO","NÚMERO DOCUMENTO","N DOC","N DOCUMENTO","NDOCUMENTO",
+              "NUMERODEDOCUMENTO","NDOC"
+            ])) {
+              setNumeroDocumentoDesdeExcel(v); rellenados++; continue;
+            }
+            // APELLIDOS (divide)
+            if (isKey(key, ["APELLIDOS"])) {
+              const s = String(v||"").trim();
+              if (s) {
+                const partes = s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
+                const primero = findFieldByName("PRIMER APELLIDO");
+                const segundo  = findFieldByName("SEGUNDO APELLIDO");
+                if (primero){ primero.value = (partes[0]||""); rellenados++; }
+                if (segundo){ segundo.value = (partes[1]||""); rellenados++; }
+              }
+              continue;
+            }
+            // Fechas
+            if (isKey(key, ["FECHA DE NACIMIENTO","FECHA NACIMIENTO","NACIMIENTO","FECHADENACIMIENTO"])) {
+              const el = findFieldByKey("FECHA DE NACIMIENTO");
+              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+              continue;
+            }
+            if (isKey(key, ["FECHA DILIGENCIAS","FECHADILIGENCIAS"])) {
+              const el = findFieldByKey("FECHA DILIGENCIAS");
+              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+              continue;
+            }
+            if (isKey(key, ["FECHA DE CUMPLIMENTACION","FECHA CUMPLIMENTACION","FECHADECUMPLIMENTACION"])) {
+              const el = findFieldByKey("FECHA DE CUMPLIMENTACION");
+              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+              continue;
+            }
+            // General
+            const el = findFieldByKey(key);
+            if (el){ el.value = (v ?? "").toString(); rellenados++; }
           }
-          // Fechas
-          if(isKey(key, ["FECHA DE NACIMIENTO","FECHA NACIMIENTO","NACIMIENTO","FECHADENACIMIENTO"])){
-            const el = findFieldByKey("FECHA DE NACIMIENTO");
-            if(el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-            continue;
-          }
-          if(isKey(key, ["FECHA DILIGENCIAS","FECHADILIGENCIAS"])){
-            const el = findFieldByKey("FECHA DILIGENCIAS");
-            if(el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-            continue;
-          }
-          if(isKey(key, ["FECHA DE CUMPLIMENTACION","FECHA CUMPLIMENTACION","FECHADECUMPLIMENTACION"])){
-            const el = findFieldByKey("FECHA DE CUMPLIMENTACION");
-            if(el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-            continue;
-          }
-          // General
-          const el = findFieldByKey(key);
-          if(el){ el.value = (v ?? "").toString(); rellenados++; }
-        }
 
-        if(fechaGeneracionExcel){
-          const f1 = findFieldByKey("FECHA DILIGENCIAS");
-          const f2 = findFieldByKey("FECHA DE CUMPLIMENTACION");
-          if(f1 && !String(f1.value||"").trim()){ f1.value = fechaGeneracionExcel; rellenados++; }
-          if(f2 && !String(f2.value||"").trim()){ f2.value = fechaGeneracionExcel; rellenados++; }
-        }
+          if (fechaGeneracionExcel) {
+            const f1 = findFieldByKey("FECHA DILIGENCIAS");
+            const f2 = findFieldByKey("FECHA DE CUMPLIMENTACION");
+            if (f1 && !String(f1.value||"").trim()){ f1.value = fechaGeneracionExcel; rellenados++; }
+            if (f2 && !String(f2.value||"").trim()){ f2.value = fechaGeneracionExcel; rellenados++; }
+          }
 
-        document.getElementById("message").innerText = `✅ XLSX cargado: ${rellenados} campos asignados`;
-      } catch(err) {
-        console.error(err);
-        document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err?.message || err);
+          document.getElementById("message").innerText = "✅ XLSX cargado: " + rellenados + " campos asignados";
+        } catch (err) {
+          console.error(err);
+          document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err && err.message ? err.message : err);
+        }
+      }
+
+      if (file.arrayBuffer) {
+        file.arrayBuffer()
+          .then(procesarBuf)
+          .catch(function (err) {
+            console.error(err);
+            document.getElementById("message").innerText = "❌ Error al leer archivo: " + (err && err.message ? err.message : err);
+          });
+      } else {
+        var fr = new FileReader();
+        fr.onload = function (ev) { procesarBuf(ev.target.result); };
+        fr.onerror = function () {
+          document.getElementById("message").innerText = "❌ Error con FileReader.";
+        };
+        fr.readAsArrayBuffer(file);
       }
     };
   }
@@ -576,55 +535,45 @@ async function refrescarFuerte(){
     return new RegExp("\\{\\{(?:\\s|<[^>]+>|&nbsp;)*"+flexible+"(?:\\s|<[^>]+>|&nbsp;)*\\}\\}","gi");
   }
 
-function reemplazarPlaceholdersODT(xml, dataUpper) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, "application/xml");
+  function reemplazarPlaceholdersODT(xml, dataUpper) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, "application/xml");
 
-  // Reemplazar {{CLAVE}} en texto normal
-  doc.querySelectorAll("*").forEach(node => {
-    if (node.textContent && node.textContent.includes("{{")) {
-      for (const k in dataUpper) {
-        const v = dataUpper[k] ?? "";
-        const regex = new RegExp("{{\\s*" + k + "\\s*}}", "gi");
-        node.textContent = node.textContent.replace(regex, v);
+    doc.querySelectorAll("*").forEach(node => {
+      if (node.textContent && node.textContent.includes("{{")) {
+        for (const k in dataUpper) {
+          const v = dataUpper[k] ?? "";
+          const regex = new RegExp("{{\\s*" + k + "\\s*}}", "gi");
+          node.textContent = node.textContent.replace(regex, v);
+        }
       }
-    }
-  });
+    });
 
-  // Reemplazar en <text:placeholder>
-  doc.querySelectorAll("text\\:placeholder").forEach(ph => {
-    const key = ph.textContent.trim().toUpperCase();
-    if (dataUpper[key] !== undefined) {
-      ph.textContent = dataUpper[key];
-    }
-  });
+    doc.querySelectorAll("text\\:placeholder").forEach(ph => {
+      const key = ph.textContent.trim().toUpperCase();
+      if (dataUpper[key] !== undefined) ph.textContent = dataUpper[key];
+    });
 
-  // Reemplazar en <text:variable-set>
-  doc.querySelectorAll("text\\:variable-set").forEach(v => {
-    const key = (v.getAttribute("text:name") || "").toUpperCase();
-    if (dataUpper[key] !== undefined) {
-      v.setAttribute("office:string-value", dataUpper[key]);
-      v.textContent = dataUpper[key];
-    }
-  });
+    doc.querySelectorAll("text\\:variable-set").forEach(v => {
+      const key = (v.getAttribute("text:name") || "").toUpperCase();
+      if (dataUpper[key] !== undefined) {
+        v.setAttribute("office:string-value", dataUpper[key]);
+        v.textContent = dataUpper[key];
+      }
+    });
 
-  return new XMLSerializer().serializeToString(doc);
-}
+    return new XMLSerializer().serializeToString(doc);
+  }
 
-
-  // Generador ODT con auto-mapeo de placeholders del XML
   async function generarODTUint8(base64, dataUpper){
     const bytes = Uint8Array.from(atob(base64.replace(/[\r\n\t ]+/g,"")), c=>c.charCodeAt(0));
     const zip = await JSZip.loadAsync(bytes);
     let xml = await zip.file("content.xml").async("string");
 
-    // 0) EXTRA: detectar placeholders reales del XML y mapearlos a claves de dataUpper por normalización
-    const phRegex = /\{\{([\s\S]*?)\}\}/g; // captura interior (puede contener etiquetas)
+    const phRegex = /\{\{([\s\S]*?)\}\}/g;
     const found = [];
     let m;
-    while ((m = phRegex.exec(xml)) !== null){
-      found.push(m[1]); // interior
-    }
+    while ((m = phRegex.exec(xml)) !== null){ found.push(m[1]); }
     if(found.length){
       const clean = s => s.replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
       const byNorm = {};
@@ -639,14 +588,12 @@ function reemplazarPlaceholdersODT(xml, dataUpper) {
       }
     }
 
-    // 1) Reemplazo flexible (acepta etiquetas/espacios dentro de {{...}})
     for(const k in dataUpper){
       const v = (dataUpper[k]??"").toString();
       xml = xml.replace(buildFlexibleRegex(k), v);
       xml = xml.replace(new RegExp("\\{\\{\\s*"+escapeRegExp(k)+"\\s*\\}\\}","g"), v);
     }
 
-    // 2) Limpia restos
     xml = xml.replace(/{{\s*[^}]+\s*}}/g,"");
 
     zip.file("content.xml", xml);
@@ -681,13 +628,9 @@ function reemplazarPlaceholdersODT(xml, dataUpper) {
         return;
       }
 
-      // 1) Recoger datos
       const data = {};
-      document.querySelectorAll("[name]").forEach(el=>{
-        data[el.name] = el.value ?? "";
-      });
+      document.querySelectorAll("[name]").forEach(el=>{ data[el.name] = el.value ?? ""; });
 
-      // 2) Tipo doc / indocumentado
       const tipoOpt = document.getElementById("tipoDocumento")?.value || "";
       const tipoOtro = document.getElementById("tipoDocumentoOtro")?.value || "";
       data["TIPO DOCUMENTO"] = (tipoOpt==="OTRO") ? tipoOtro : tipoOpt;
@@ -697,7 +640,6 @@ function reemplazarPlaceholdersODT(xml, dataUpper) {
         data["NÚMERO DE DOCUMENTO"] = "";
       }
 
-      // 3) SEXO -> H/M
       const sexoEl = document.getElementById("sexo");
       if (sexoEl) {
         const raw = (sexoEl.value || sexoEl.options[sexoEl.selectedIndex]?.text || "").toUpperCase();
@@ -706,30 +648,24 @@ function reemplazarPlaceholdersODT(xml, dataUpper) {
           (raw.startsWith("M") || raw.includes("FEM")) ? "M" : (data["SEXO"] || "");
       }
 
-      // 4) dataUpper
       const dataUpper = {};
       for(const k in data){ dataUpper[k] = U(data[k]); }
 
-// --- ALIAS DIRECTOS PARA PLACEHOLDERS DEL ODT ---
-dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
-dataUpper["PAIS"] = dataUpper["PAIS"] || dataUpper["PAÍS"] || "";
+      // --- ALIAS DIRECTOS ---
+      dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
+      dataUpper["PAIS"] = dataUpper["PAIS"] || dataUpper["PAÍS"] || "";
+      dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
+      dataUpper["PROFESION"] = dataUpper["PROFESION"] || dataUpper["PROFESIÓN"] || "";
+      dataUpper["NUMERO DE DOCUMENTO"] = dataUpper["NUMERO DE DOCUMENTO"] || dataUpper["NÚMERO DE DOCUMENTO"] || "";
+      dataUpper["NÚMERO DE DOCUMENTO"] = dataUpper["NÚMERO DE DOCUMENTO"] || dataUpper["NUMERO DE DOCUMENTO"] || "";
+      dataUpper["TIPO DOCUMENTO"] = dataUpper["TIPO DOCUMENTO"] || "";
+      dataUpper["SEXO"] = dataUpper["SEXO"] || ((data["SEXO"] || "").toUpperCase());
 
-dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
-dataUpper["PROFESION"] = dataUpper["PROFESION"] || dataUpper["PROFESIÓN"] || "";
-
-dataUpper["NUMERO DE DOCUMENTO"] = dataUpper["NUMERO DE DOCUMENTO"] || dataUpper["NÚMERO DE DOCUMENTO"] || "";
-dataUpper["NÚMERO DE DOCUMENTO"] = dataUpper["NÚMERO DE DOCUMENTO"] || dataUpper["NUMERO DE DOCUMENTO"] || "";
-
-dataUpper["TIPO DOCUMENTO"] = dataUpper["TIPO DOCUMENTO"] || "";
-dataUpper["SEXO"] = dataUpper["SEXO"] || ((data["SEXO"] || "").toUpperCase());
-
-
-      // 5) Variantes comunes (acentos / 'DE' / sinónimos típicos)
+      // Variantes comunes
       (function(){
         const sinAcentos = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         const compact = s => s.replace(/\s+/g," ").trim();
         const add = (k, v) => { if (typeof dataUpper[k] === "undefined") dataUpper[k] = v; };
-
         const snap = {...dataUpper};
         for (const k in snap){
           const v = snap[k];
@@ -739,7 +675,6 @@ dataUpper["SEXO"] = dataUpper["SEXO"] || ((data["SEXO"] || "").toUpperCase());
           const sinDeNoAcc = sinAcentos(sinDe);
           add(noAcc, v); add(sinDe, v); add(sinDeNoAcc, v);
         }
-
         const SYN = {
           "NÚMERO DE DOCUMENTO": ["NUMERO DE DOCUMENTO","N DOCUMENTO","Nº DOCUMENTO","NUM DOCUMENTO"],
           "TIPO DOCUMENTO":      ["TIPO DE DOCUMENTO","TIPO_DOC","TIPO"],
@@ -758,25 +693,18 @@ dataUpper["SEXO"] = dataUpper["SEXO"] || ((data["SEXO"] || "").toUpperCase());
         }
       })();
 
-// ==== FORZAR PLACEHOLDERS EXACTOS DEL ODT ====
-// (los cinco que dices que no se rellenan)
-dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
-dataUpper["NACIONALIDAD"] = dataUpper["NACIONALIDAD"] || "";
+      // Forzar placeholders exactos del ODT
+      dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
+      dataUpper["NACIONALIDAD"] = dataUpper["NACIONALIDAD"] || "";
+      dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
+      dataUpper["TIPO DOCUMENTO"] = dataUpper["TIPO DOCUMENTO"] || (data["TIPO DOCUMENTO"] || "").toUpperCase();
+      dataUpper["NUMERO DE DOCUMENTO"] =
+        dataUpper["NUMERO DE DOCUMENTO"] ||
+        dataUpper["NÚMERO DE DOCUMENTO"] ||
+        (data["NÚMERO DE DOCUMENTO"] || "").toUpperCase();
 
-dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
-
-dataUpper["TIPO DOCUMENTO"] = dataUpper["TIPO DOCUMENTO"] || (data["TIPO DOCUMENTO"] || "").toUpperCase();
-
-dataUpper["NUMERO DE DOCUMENTO"] =
-  dataUpper["NUMERO DE DOCUMENTO"] ||
-  dataUpper["NÚMERO DE DOCUMENTO"] ||  // tu input del HTML
-  (data["NÚMERO DE DOCUMENTO"] || "").toUpperCase();
-
-
-      // 6) Generar ODT
       const odt = await generarODTUint8(plantilla, dataUpper);
 
-      // 7) Guardar
       const nombre = (data["NOMBRE"]||"").trim();
       const a1 = (data["PRIMER APELLIDO"]||"").trim();
       const a2 = (data["SEGUNDO APELLIDO"]||"").trim();
@@ -795,6 +723,6 @@ dataUpper["NUMERO DE DOCUMENTO"] =
     const otro = document.getElementById("tipoDocumentoOtro");
     if(sel && otro){ if(sel.value==="OTRO") otro.style.display="block"; else otro.style.display="none"; }
   });
-</script>
-
-
+  </script>
+</body>
+</html>

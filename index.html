@@ -11,6 +11,30 @@
   <script src="./xlsx.full.min.js" defer></script>
   <script src="./plantilla_roa.js" defer></script>
 
+  <script>
+  // Carga XLSX si no existe; primero intenta local, luego CDN
+  (function () {
+    function loadScript(src, ok, fail){
+      var s=document.createElement('script');
+      s.src=src; s.onload=ok; s.onerror=fail || function(){};
+      document.head.appendChild(s);
+    }
+    window.ensureXLSX = function (cb){
+      if (window.XLSX) { cb(); return; }
+      // 1) si por algún motivo el 'defer' no lo cargó aún, reintenta local
+      loadScript('./xlsx.full.min.js', function(){ cb(); }, function(){
+        // 2) fallback CDN
+        loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', cb, function(){
+          const m = document.getElementById('message');
+          if (m) m.innerText = '❌ No se pudo cargar XLSX (local ni CDN).';
+          console.error('No se pudo cargar XLSX desde local ni CDN');
+        });
+      });
+    };
+  })();
+</script>
+
+
   <style>
     :root{
       --bg:#0f172a;
@@ -380,145 +404,136 @@
     return headers.map((h,i) => [h, dataRow[i]]).filter(([k]) => String(k ?? '').trim() !== '');
   }
 
+  <script>
   async function cargarExcel(){
     const input = document.getElementById("fileInputXLSX");
     input.value = null;
-    input.click();
 
+    // el handler ahora garantiza XLSX antes de procesar
     input.onchange = function (e) {
-      // Comprobar librería
-      if (typeof XLSX === "undefined") {
-        document.getElementById("message").innerText = "❌ XLSX no está cargado. Revisa la ruta de xlsx.full.min.js.";
-        return;
-      }
-
-      var file = (e && e.target && e.target.files && e.target.files[0]) ? e.target.files[0] : null;
-      if (!file) {
-        document.getElementById("message").innerText = "⚠️ No se seleccionó ningún archivo.";
-        return;
-      }
-
-      function procesarBuf(buf) {
-        try {
-          var wb = XLSX.read(buf, { type: "array" });
-          if (!wb.SheetNames || wb.SheetNames.length === 0) {
-            document.getElementById("message").innerText = "⚠️ El Excel no tiene hojas.";
-            return;
-          }
-          var sheet = wb.Sheets[wb.SheetNames[0]];
-          if (!sheet) {
-            document.getElementById("message").innerText = "⚠️ La primera hoja está vacía.";
-            return;
-          }
-          var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: "" });
-
-          const pairs = rowsToPairs(rows);
-          let rellenados = 0;
-          let fechaGeneracionExcel = "";
-
-          for (var i = 0; i < pairs.length; i++) {
-            var campo = pairs[i][0];
-            var valor = pairs[i][1];
-            if (!campo) continue;
-            const key = String(campo).trim();
-            let v = valor;
-
-            // SEXO
-            if (isKey(key, ["SEXO","GENERO"])) {
-              const val = String(v || "").trim().toUpperCase();
-              const el = document.getElementById("sexo");
-              if (el) {
-                if (val.startsWith("H") || val.indexOf("MASC") >= 0) el.value = "H";
-                else if (val.startsWith("M") || val.indexOf("FEM") >= 0) el.value = "M";
-              }
-              rellenados++; continue;
-            }
-            // TELEFONO
-            if (isKey(key, ["TELEFONO","TELÉFONO","TLF","MOVIL","MÓVIL","CELULAR"])) {
-              const el = findFieldByKey("TELEFONO");
-              if (el) { el.value = (v ?? "").toString(); rellenados++; }
-              continue;
-            }
-            // FECHA GENERACION
-            if (isKey(key, ["FECHA GENERACION","FECHA DE GENERACION","FECHA_GENERACION"])) {
-              fechaGeneracionExcel = ddmmyyyy_from_excel(v); continue;
-            }
-            // TIPO DOCUMENTO
-            if (isKey(key, ["TIPO DOCUMENTO","TIPO DE DOCUMENTO","TIPO_DOC","TIPO"])) {
-              setTipoDocumentoDesdeExcel(v); rellenados++; continue;
-            }
-            // Nº DOCUMENTO
-            if (isKey(key, [
-              "Nº DOCUMENTO","NºDOCUMENTO","NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO",
-              "NUMERO DOCUMENTO","NÚMERO DOCUMENTO","N DOC","N DOCUMENTO","NDOCUMENTO",
-              "NUMERODEDOCUMENTO","NDOC"
-            ])) {
-              setNumeroDocumentoDesdeExcel(v); rellenados++; continue;
-            }
-            // APELLIDOS (divide)
-            if (isKey(key, ["APELLIDOS"])) {
-              const s = String(v||"").trim();
-              if (s) {
-                const partes = s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
-                const primero = findFieldByName("PRIMER APELLIDO");
-                const segundo  = findFieldByName("SEGUNDO APELLIDO");
-                if (primero){ primero.value = (partes[0]||""); rellenados++; }
-                if (segundo){ segundo.value = (partes[1]||""); rellenados++; }
-              }
-              continue;
-            }
-            // Fechas
-            if (isKey(key, ["FECHA DE NACIMIENTO","FECHA NACIMIENTO","NACIMIENTO","FECHADENACIMIENTO"])) {
-              const el = findFieldByKey("FECHA DE NACIMIENTO");
-              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-              continue;
-            }
-            if (isKey(key, ["FECHA DILIGENCIAS","FECHADILIGENCIAS"])) {
-              const el = findFieldByKey("FECHA DILIGENCIAS");
-              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-              continue;
-            }
-            if (isKey(key, ["FECHA DE CUMPLIMENTACION","FECHA CUMPLIMENTACION","FECHADECUMPLIMENTACION"])) {
-              const el = findFieldByKey("FECHA DE CUMPLIMENTACION");
-              if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
-              continue;
-            }
-            // General
-            const el = findFieldByKey(key);
-            if (el){ el.value = (v ?? "").toString(); rellenados++; }
-          }
-
-          if (fechaGeneracionExcel) {
-            const f1 = findFieldByKey("FECHA DILIGENCIAS");
-            const f2 = findFieldByKey("FECHA DE CUMPLIMENTACION");
-            if (f1 && !String(f1.value||"").trim()){ f1.value = fechaGeneracionExcel; rellenados++; }
-            if (f2 && !String(f2.value||"").trim()){ f2.value = fechaGeneracionExcel; rellenados++; }
-          }
-
-          document.getElementById("message").innerText = "✅ XLSX cargado: " + rellenados + " campos asignados";
-        } catch (err) {
-          console.error(err);
-          document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err && err.message ? err.message : err);
+      ensureXLSX(function () {
+        var file = (e && e.target && e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+        if (!file) {
+          document.getElementById("message").innerText = "⚠️ No se seleccionó ningún archivo.";
+          return;
         }
-      }
+        function procesarBuf(buf) {
+          try {
+            var wb = XLSX.read(buf, { type: "array" });
+            if (!wb.SheetNames || wb.SheetNames.length === 0) {
+              document.getElementById("message").innerText = "⚠️ El Excel no tiene hojas.";
+              return;
+            }
+            var sheet = wb.Sheets[wb.SheetNames[0]];
+            if (!sheet) {
+              document.getElementById("message").innerText = "⚠️ La primera hoja está vacía.";
+              return;
+            }
+            var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: "" });
 
-      if (file.arrayBuffer) {
-        file.arrayBuffer()
-          .then(procesarBuf)
-          .catch(function (err) {
+            const pairs = rowsToPairs(rows);
+            let rellenados = 0;
+            let fechaGeneracionExcel = "";
+
+            for (var i = 0; i < pairs.length; i++) {
+              var campo = pairs[i][0];
+              var valor = pairs[i][1];
+              if (!campo) continue;
+              const key = String(campo).trim();
+              let v = valor;
+
+              // ======== tu lógica tal cual ========
+              if (isKey(key, ["SEXO","GENERO"])) {
+                const val = String(v || "").trim().toUpperCase();
+                const el = document.getElementById("sexo");
+                if (el) {
+                  if (val.startsWith("H") || val.indexOf("MASC") >= 0) el.value = "H";
+                  else if (val.startsWith("M") || val.indexOf("FEM") >= 0) el.value = "M";
+                }
+                rellenados++; continue;
+              }
+              if (isKey(key, ["TELEFONO","TELÉFONO","TLF","MOVIL","MÓVIL","CELULAR"])) {
+                const el = findFieldByKey("TELEFONO");
+                if (el) { el.value = (v ?? "").toString(); rellenados++; }
+                continue;
+              }
+              if (isKey(key, ["FECHA GENERACION","FECHA DE GENERACION","FECHA_GENERACION"])) {
+                fechaGeneracionExcel = ddmmyyyy_from_excel(v); continue;
+              }
+              if (isKey(key, ["TIPO DOCUMENTO","TIPO DE DOCUMENTO","TIPO_DOC","TIPO"])) {
+                setTipoDocumentoDesdeExcel(v); rellenados++; continue;
+              }
+              if (isKey(key, [
+                "Nº DOCUMENTO","NºDOCUMENTO","NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO",
+                "NUMERO DOCUMENTO","NÚMERO DOCUMENTO","N DOC","N DOCUMENTO","NDOCUMENTO",
+                "NUMERODEDOCUMENTO","NDOC"
+              ])) {
+                setNumeroDocumentoDesdeExcel(v); rellenados++; continue;
+              }
+              if (isKey(key, ["APELLIDOS"])) {
+                const s = String(v||"").trim();
+                if (s) {
+                  const partes = s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
+                  const primero = findFieldByName("PRIMER APELLIDO");
+                  const segundo  = findFieldByName("SEGUNDO APELLIDO");
+                  if (primero){ primero.value = (partes[0]||""); rellenados++; }
+                  if (segundo){ segundo.value = (partes[1]||""); rellenados++; }
+                }
+                continue;
+              }
+              if (isKey(key, ["FECHA DE NACIMIENTO","FECHA NACIMIENTO","NACIMIENTO","FECHADENACIMIENTO"])) {
+                const el = findFieldByKey("FECHA DE NACIMIENTO");
+                if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+                continue;
+              }
+              if (isKey(key, ["FECHA DILIGENCIAS","FECHADILIGENCIAS"])) {
+                const el = findFieldByKey("FECHA DILIGENCIAS");
+                if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+                continue;
+              }
+              if (isKey(key, ["FECHA DE CUMPLIMENTACION","FECHA CUMPLIMENTACION","FECHADECUMPLIMENTACION"])) {
+                const el = findFieldByKey("FECHA DE CUMPLIMENTACION");
+                if (el){ el.value = ddmmyyyy_from_excel(v); rellenados++; }
+                continue;
+              }
+              const el = findFieldByKey(key);
+              if (el){ el.value = (v ?? "").toString(); rellenados++; }
+            }
+
+            if (fechaGeneracionExcel) {
+              const f1 = findFieldByKey("FECHA DILIGENCIAS");
+              const f2 = findFieldByKey("FECHA DE CUMPLIMENTACION");
+              if (f1 && !String(f1.value||"").trim()){ f1.value = fechaGeneracionExcel; rellenados++; }
+              if (f2 && !String(f2.value||"").trim()){ f2.value = fechaGeneracionExcel; rellenados++; }
+            }
+
+            document.getElementById("message").innerText = "✅ XLSX cargado: " + rellenados + " campos asignados";
+          } catch (err) {
+            console.error(err);
+            document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err && err.message ? err.message : err);
+          }
+        }
+
+        if (file.arrayBuffer) {
+          file.arrayBuffer().then(procesarBuf).catch(function (err) {
             console.error(err);
             document.getElementById("message").innerText = "❌ Error al leer archivo: " + (err && err.message ? err.message : err);
           });
-      } else {
-        var fr = new FileReader();
-        fr.onload = function (ev) { procesarBuf(ev.target.result); };
-        fr.onerror = function () {
-          document.getElementById("message").innerText = "❌ Error con FileReader.";
-        };
-        fr.readAsArrayBuffer(file);
-      }
+        } else {
+          var fr = new FileReader();
+          fr.onload = function (ev) { procesarBuf(ev.target.result); };
+          fr.onerror = function () {
+            document.getElementById("message").innerText = "❌ Error con FileReader.";
+          };
+          fr.readAsArrayBuffer(file);
+        }
+      });
     };
+
+    // abrir selector
+    input.click();
   }
+</script>
 
   // ============ ODT ============
   function getPlantillaROA(){

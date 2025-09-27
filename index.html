@@ -5,79 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>R.O.A. – Carga desde Excel y Generación ODT</title>
 
-  <!-- Librerías (defer para cargarlas sin bloquear y en orden) -->
+  <!-- Librerías (defer para orden correcto) -->
   <script src="./jszip.min.js" defer></script>
   <script src="./FileSaver.min.js" defer></script>
   <script src="./xlsx.full.min.js" defer></script>
   <script src="./plantilla_roa.js" defer></script>
 
+  <!-- Bootstrap para asegurar XLSX (local -> CDN si falla) -->
   <script>
-  // Carga XLSX si no existe; primero intenta local, luego CDN
-  (function () {
-    function loadScript(src, ok, fail){
-      var s=document.createElement('script');
-      s.src=src; s.onload=ok; s.onerror=fail || function(){};
-      document.head.appendChild(s);
-    }
-    window.ensureXLSX = function (cb){
-      if (window.XLSX) { cb(); return; }
-      // 1) si por algún motivo el 'defer' no lo cargó aún, reintenta local
-      loadScript('./xlsx.full.min.js', function(){ cb(); }, function(){
-        // 2) fallback CDN
-        loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', cb, function(){
-          const m = document.getElementById('message');
-          if (m) m.innerText = '❌ No se pudo cargar XLSX (local ni CDN).';
-          console.error('No se pudo cargar XLSX desde local ni CDN');
+    (function () {
+      function loadScript(src, ok, fail){
+        var s=document.createElement('script');
+        s.src=src; s.onload=ok; s.onerror=fail||function(){};
+        document.head.appendChild(s);
+      }
+      window.ensureXLSX = function (cb){
+        if (window.XLSX) { cb(); return; }
+        // reintento local (por si el defer no ejecutó aún en iOS/Archivos)
+        loadScript('./xlsx.full.min.js', function(){ cb(); }, function(){
+          // fallback CDN
+          loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', function(){ cb(); }, function(){
+            var m=document.getElementById('message');
+            if(m) m.innerText='❌ No se pudo cargar XLSX (local ni CDN).';
+            console.error('No se pudo cargar XLSX desde local ni CDN');
+          });
         });
-      });
-    };
-  })();
-</script>
-
+      };
+    })();
+  </script>
 
   <style>
     :root{
-      --bg:#0f172a;
-      --panel:#0b1222;
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --primary:#2563eb;
-      --primary-2:#1d4ed8;
-      --accent:#14b8a6;
-      --card:#111827;
-      --border:#243042;
-      --radius:12px;
+      --bg:#0f172a; --panel:#0b1222; --text:#e5e7eb; --muted:#9ca3af;
+      --primary:#2563eb; --primary-2:#1d4ed8; --accent:#14b8a6;
+      --card:#111827; --border:#243042; --radius:12px;
     }
     *{ box-sizing:border-box }
     html,body{ height:100% }
     body{
       margin:0; font-family:Segoe UI, Roboto, Arial, sans-serif;
       background: radial-gradient(1200px 800px at 50% -200px, #12223d 0%, #0a0f1e 60%, #05060b 100%);
-      color:var(--text);
-      display:flex; flex-direction:column;
+      color:var(--text); display:flex; flex-direction:column;
     }
-
     header{ width:100%; padding:16px 24px 0; }
-    .title{
-      max-width:1600px; margin:0 auto;
-      display:flex; align-items:center; justify-content:center; gap:16px;
-    }
-    .title h1{
-      margin:0; font-size:28px; font-weight:800; letter-spacing:.5px;
-      color:#cfe3ff; text-shadow:0 2px 14px rgba(29,78,216,.55);
-    }
+    .title{ max-width:1600px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:16px; }
+    .title h1{ margin:0; font-size:28px; font-weight:800; letter-spacing:.5px; color:#cfe3ff; text-shadow:0 2px 14px rgba(29,78,216,.55); }
 
-    .actions{
-      max-width:1600px; margin:12px auto 0;
-      display:flex; gap:12px; justify-content:center; flex-wrap:wrap;
-    }
+    .actions{ max-width:1600px; margin:12px auto 0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
     .btn{
-      background:var(--primary);
-      border:1px solid var(--primary-2);
+      background:var(--primary); border:1px solid var(--primary-2);
       color:white; padding:12px 16px; border-radius:10px;
       font-weight:800; text-transform:uppercase; letter-spacing:.6px;
-      cursor:pointer;
-      transition:transform .06s ease, box-shadow .12s ease;
+      cursor:pointer; transition:transform .06s ease, box-shadow .12s ease;
     }
     .btn:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(37,99,235,.25); }
     .btn.secondary{ background:#0b1b33; border-color:#193052; }
@@ -92,39 +71,26 @@
       box-shadow:0 30px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
       border-radius:16px; padding:22px 26px;
     }
-
     h2{
       margin:18px 0 8px; font-size:18px; letter-spacing:.4px; text-transform:uppercase;
       color:#b9d3ff; display:flex; align-items:center; gap:10px;
       border-bottom:2px solid #1f3b69; padding-bottom:6px;
     }
-
     .grid{ display:grid; gap:10px; grid-template-columns: repeat(4, minmax(180px,1fr)); }
     @media (max-width: 1280px){ .grid{ grid-template-columns: repeat(3, minmax(180px,1fr)); } }
     @media (max-width: 980px){ .grid{ grid-template-columns: repeat(2, minmax(180px,1fr)); } }
 
-    .card{
-      background:linear-gradient(180deg, #0c1428, #0a1121);
-      border:1px solid var(--border);
-      border-radius:10px; padding:10px 10px 8px;
-      display:flex; flex-direction:column; gap:6px; min-height:64px;
-    }
-    label{
-      font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px;
-      color:#9cc2ff;
-    }
+    .card{ background:linear-gradient(180deg, #0c1428, #0a1121); border:1px solid var(--border); border-radius:10px; padding:10px 10px 8px; display:flex; flex-direction:column; gap:6px; min-height:64px; }
+    label{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#9cc2ff; }
     input, select, textarea{
-      width:100%; padding:7px 8px;
-      border-radius:8px; border:1px solid #2a3955; background:#f8fafc;
+      width:100%; padding:7px 8px; border-radius:8px; border:1px solid #2a3955; background:#f8fafc;
       color:#0b1222; font-size:14px; outline:none;
     }
     textarea{ min-height:64px; resize:vertical; }
     input:focus, select:focus, textarea:focus{ box-shadow:0 0 0 2px rgba(100,180,255,.25); border-color:#4b86df; }
 
     .full{ grid-column: 1 / -1; }
-
     #message{ margin-top:12px; text-align:center; font-weight:700; color:#bfe5ff; min-height: 24px; }
-
     .mini{ display:none }
   </style>
 </head>
@@ -153,11 +119,7 @@
           <input type="text" id="tipoDocumentoOtro" name="TIPO DOCUMENTO" placeholder="Especificar otro" style="display:none;">
         </div>
 
-        <div class="card">
-          <label>NUMERO DE DOCUMENTO</label>
-          <input type="text" id="numeroDocumento" name="NÚMERO DE DOCUMENTO">
-        </div>
-
+        <div class="card"><label>NUMERO DE DOCUMENTO</label><input type="text" id="numeroDocumento" name="NÚMERO DE DOCUMENTO"></div>
         <div class="card"><label>Nombre</label><input type="text" name="NOMBRE"></div>
         <div class="card"><label>Primer apellido</label><input type="text" name="PRIMER APELLIDO"></div>
         <div class="card"><label>Segundo apellido</label><input type="text" name="SEGUNDO APELLIDO"></div>
@@ -248,42 +210,44 @@
     <button class="btn warn"      type="button" style="background:#0000FF" onclick="refrescarFuerte()">⟲ Refrescar</button>
   </div>
 
-  <!-- Normalizador de placeholders rotos -->
+  <!-- Normalizador de placeholders: ahora en DOMContentLoaded para no “comerse” el resto -->
   <script>
-  (function () {
-    const FIELD_MAP = {
-      "PAÍS": ["PAIS", "PAÍS"],
-      "NACIONALIDAD": ["NACIONALIDAD"],
-      "NÚMERO DE DOCUMENTO": ["NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO","NUMERO DOCUMENTO","NÚMERO DOCUMENTO"],
-      "PROFESIÓN": ["PROFESION","PROFESIÓN"],
-      "TIPO DOCUMENTO": ["TIPO DOCUMENTO","TIPO DE DOCUMENTO"]
-    };
-    const stripAccents = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    const SEP = String.raw`(?:\s|<[^>]+>|&nbsp;)*`;
-    const lettersPat = s => s.split('').map(ch => esc(ch)).join(SEP);
-    function makeBrokenTokenRx(token){
-      const up = token.toUpperCase();
-      const upNoAcc = stripAccents(up);
-      const inner = `(?:${lettersPat(up)}|${lettersPat(upNoAcc)})`;
-      const pattern = String.raw`\{${SEP}\{${SEP}${inner}${SEP}\}${SEP}\}`;
-      return new RegExp(pattern,'gsi');
-    }
-    function normalizeHtml(html, outKey, variants){
-      for(const v of variants){ html = html.replace(makeBrokenTokenRx(v), `{{${outKey}}}`); }
-      const tight = new RegExp(String.raw`\{\{\s*${esc(outKey)}\s*\}\}`,'gi');
-      return html.replace(tight, `{{${outKey}}}`);
-    }
-    const root = document.body;
-    let html = root.innerHTML;
-    for(const [outKey, variants] of Object.entries(FIELD_MAP)){
-      html = normalizeHtml(html, outKey, variants);
-    }
-    root.innerHTML = html;
-  })();
+    window.addEventListener('DOMContentLoaded', function(){
+      (function () {
+        const FIELD_MAP = {
+          "PAÍS": ["PAIS", "PAÍS"],
+          "NACIONALIDAD": ["NACIONALIDAD"],
+          "NÚMERO DE DOCUMENTO": ["NUMERO DE DOCUMENTO","NÚMERO DE DOCUMENTO","NUMERO DOCUMENTO","NÚMERO DOCUMENTO"],
+          "PROFESIÓN": ["PROFESION","PROFESIÓN"],
+          "TIPO DOCUMENTO": ["TIPO DOCUMENTO","TIPO DE DOCUMENTO"]
+        };
+        const stripAccents = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        const SEP = String.raw`(?:\s|<[^>]+>|&nbsp;)*`;
+        const lettersPat = s => s.split('').map(ch => esc(ch)).join(SEP);
+        function makeBrokenTokenRx(token){
+          const up = token.toUpperCase();
+          const upNoAcc = stripAccents(up);
+          const inner = `(?:${lettersPat(up)}|${lettersPat(upNoAcc)})`;
+          const pattern = String.raw`\{${SEP}\{${SEP}${inner}${SEP}\}${SEP}\}`;
+          return new RegExp(pattern,'gsi');
+        }
+        function normalizeHtml(html, outKey, variants){
+          for(const v of variants){ html = html.replace(makeBrokenTokenRx(v), `{{${outKey}}}`); }
+          const tight = new RegExp(String.raw`\{\{\s*${esc(outKey)}\s*\}\}`,'gi');
+          return html.replace(tight, `{{${outKey}}}`);
+        }
+        const root = document.body;
+        let html = root.innerHTML;
+        for(const [outKey, variants] of Object.entries(FIELD_MAP)){
+          html = normalizeHtml(html, outKey, variants);
+        }
+        root.innerHTML = html;
+      })();
+    });
   </script>
 
-  <!-- Tu script principal -->
+  <!-- Script principal (tu lógica intacta, con cargarExcel robusto y fallback XLSX) -->
   <script>
   async function refrescarFuerte(){
     try{
@@ -303,15 +267,10 @@
   function norm(s){
     return String(s ?? "")
       .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/º|°/g,"O")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g,"")
-      .trim();
+      .replace(/º|°/g,"O").toUpperCase()
+      .replace(/[^A-Z0-9]/g,"").trim();
   }
-  function isKey(campo, variantes){
-    const n = norm(campo);
-    return variantes.some(v => n === norm(v));
-  }
+  function isKey(campo, variantes){ const n = norm(campo); return variantes.some(v => n === norm(v)); }
   function findFieldByName(name){ return document.querySelector(`[name="${name}"]`); }
   function ddmmyyyy_from_excel(v){
     if(typeof v === "number"){
@@ -360,7 +319,7 @@
   }
 
   // ============ UI: tipo documento ============
-  document.addEventListener('change', e=>{
+  document.addEventListener('change', function(e){
     if(e.target.id==="tipoDocumento"){
       const val=e.target.value;
       const otro=document.getElementById('tipoDocumentoOtro');
@@ -391,7 +350,7 @@
     el.value = (valor ?? "").toString().trim();
   }
 
-  // ============ Lectura Excel (robusto) ============
+  // ============ Lectura Excel (robusto con fallback XLSX) ============
   function rowsToPairs(rows){
     if(!Array.isArray(rows) || !rows.length) return [];
     const nonEmptyLens = rows.map(r => (Array.isArray(r)? r : []).filter(c => String(c ?? '').trim() !== '').length);
@@ -404,12 +363,10 @@
     return headers.map((h,i) => [h, dataRow[i]]).filter(([k]) => String(k ?? '').trim() !== '');
   }
 
-  <script>
   async function cargarExcel(){
     const input = document.getElementById("fileInputXLSX");
     input.value = null;
 
-    // el handler ahora garantiza XLSX antes de procesar
     input.onchange = function (e) {
       ensureXLSX(function () {
         var file = (e && e.target && e.target.files && e.target.files[0]) ? e.target.files[0] : null;
@@ -442,7 +399,6 @@
               const key = String(campo).trim();
               let v = valor;
 
-              // ======== tu lógica tal cual ========
               if (isKey(key, ["SEXO","GENERO"])) {
                 const val = String(v || "").trim().toUpperCase();
                 const el = document.getElementById("sexo");
@@ -522,9 +478,7 @@
         } else {
           var fr = new FileReader();
           fr.onload = function (ev) { procesarBuf(ev.target.result); };
-          fr.onerror = function () {
-            document.getElementById("message").innerText = "❌ Error con FileReader.";
-          };
+          fr.onerror = function () { document.getElementById("message").innerText = "❌ Error con FileReader."; };
           fr.readAsArrayBuffer(file);
         }
       });
@@ -533,7 +487,6 @@
     // abrir selector
     input.click();
   }
-</script>
 
   // ============ ODT ============
   function getPlantillaROA(){
@@ -624,7 +577,7 @@
         });
         const writable = await handle.createWritable();
         await writable.write(blob); await writable.close(); return;
-      }catch(e){ /* fallback */ }
+      }catch(e){ }
     }
     const url = URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a);
@@ -646,8 +599,10 @@
       const data = {};
       document.querySelectorAll("[name]").forEach(el=>{ data[el.name] = el.value ?? ""; });
 
-      const tipoOpt = document.getElementById("tipoDocumento")?.value || "";
-      const tipoOtro = document.getElementById("tipoDocumentoOtro")?.value || "";
+      const tipoEl = document.getElementById("tipoDocumento");
+      const tipoOpt = tipoEl ? (tipoEl.value || "") : "";
+      const tipoOtroEl = document.getElementById("tipoDocumentoOtro");
+      const tipoOtro = tipoOtroEl ? (tipoOtroEl.value || "") : "";
       data["TIPO DOCUMENTO"] = (tipoOpt==="OTRO") ? tipoOtro : tipoOpt;
       if(tipoOpt==="INDOCUMENTADO/A"){
         const nd = document.getElementById("numeroDocumento");
@@ -666,7 +621,7 @@
       const dataUpper = {};
       for(const k in data){ dataUpper[k] = U(data[k]); }
 
-      // --- ALIAS DIRECTOS ---
+      // Aliases directos / variantes
       dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
       dataUpper["PAIS"] = dataUpper["PAIS"] || dataUpper["PAÍS"] || "";
       dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
@@ -676,7 +631,6 @@
       dataUpper["TIPO DOCUMENTO"] = dataUpper["TIPO DOCUMENTO"] || "";
       dataUpper["SEXO"] = dataUpper["SEXO"] || ((data["SEXO"] || "").toUpperCase());
 
-      // Variantes comunes
       (function(){
         const sinAcentos = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
         const compact = s => s.replace(/\s+/g," ").trim();
@@ -708,7 +662,7 @@
         }
       })();
 
-      // Forzar placeholders exactos del ODT
+      // Forzado placeholders exactos
       dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
       dataUpper["NACIONALIDAD"] = dataUpper["NACIONALIDAD"] || "";
       dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
@@ -733,7 +687,7 @@
   }
 
   // Inicial
-  window.addEventListener("DOMContentLoaded", ()=>{
+  window.addEventListener("DOMContentLoaded", function(){
     const sel = document.getElementById("tipoDocumento");
     const otro = document.getElementById("tipoDocumentoOtro");
     if(sel && otro){ if(sel.value==="OTRO") otro.style.display="block"; else otro.style.display="none"; }

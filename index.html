@@ -11,256 +11,144 @@
   <script src="./xlsx.full.min.js"></script>
   <script src="./plantilla_roa.js"></script>
 
+  <!-- Loader robusto para iOS/SAFARI: asegura XLSX antes de usar -->
+  <script>
+  (function () {
+    function loadScript(src, ok, fail){
+      var s=document.createElement('script');
+      s.src=src; s.onload=ok; s.onerror=fail||function(){};
+      document.head.appendChild(s);
+    }
+    // Llama a cb SOLO cuando window.XLSX ya existe. Reintenta y hace fallback a CDN.
+    window.ensureXLSX = function (cb){
+      if (window.XLSX) { cb(); return; }
+      let tries = 0;
+      (function waitForLocal(){
+        if (window.XLSX){ cb(); return; }
+        if (tries++ < 10){ return setTimeout(waitForLocal, 50); }
+        // Reintento local explícito
+        loadScript('./xlsx.full.min.js', function(){ cb(); }, function(){
+          // Fallback CDN
+          loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', function(){ cb(); }, function(){
+            var m=document.getElementById('message');
+            if(m) m.innerText='❌ No se pudo cargar XLSX (local ni CDN).';
+          });
+        });
+      })();
+    };
+  })();
+  </script>
+
   <style>
     :root{
       --bg:#0f172a; --panel:#0b1222; --text:#e5e7eb; --border:#243042;
       --primary:#2563eb; --primary-2:#1d4ed8;
     }
-    *{ box-sizing:border-box }
-    body{ margin:0; font-family:Segoe UI, Roboto, Arial, sans-serif; background:#0f172a; color:var(--text); }
-    header{ padding:16px; text-align:center; }
-    h1{ margin:0; font-size:24px; }
-    main{ display:flex; justify-content:center; padding:16px; }
-    .wrap{ width:clamp(1100px,95vw,1600px); background:#0b1222; border:1px solid var(--border); border-radius:12px; padding:18px; }
-    h2{ margin:18px 0 8px; font-size:16px; text-transform:uppercase; color:#b9d3ff; border-bottom:2px solid #1f3b69; padding-bottom:6px; }
-    .grid{ display:grid; gap:10px; grid-template-columns: repeat(4, minmax(180px,1fr)); }
-    @media (max-width:1280px){ .grid{ grid-template-columns: repeat(3, minmax(180px,1fr)); } }
-    @media (max-width:980px){ .grid{ grid-template-columns: repeat(2, minmax(180px,1fr)); } }
-    .card{ background:#111827; border:1px solid var(--border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:6px; }
-    label{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:#9cc2ff; }
-    input, select, textarea{ width:100%; padding:7px 8px; border-radius:8px; border:1px solid #2a3955; background:#f8fafc; color:#0b1222; font-size:14px; outline:none; }
-    textarea{ min-height:64px; resize:vertical; }
-    .full{ grid-column:1 / -1; }
-    #message{ margin-top:12px; text-align:center; font-weight:700; color:#bfe5ff; min-height:24px; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:Segoe UI, Roboto, Arial, sans-serif;
+      background:#0f172a url('fondo_policia.jpg') no-repeat center center fixed;
+      background-size:cover;
+      color:var(--text);
+    }
+    header{ padding:12px; text-align:center; background:rgba(0,0,0,0.6); }
+    h1{ margin:0; font-size:20px; }
 
-    /* Botones en columna, centrados, 75% width */
-    .actions{ width:75%; margin:10px auto 24px; display:flex; flex-direction:column; align-items:center; gap:10px; }
-    .btn{ width:100%; background:var(--primary); border:1px solid var(--primary-2); color:#fff; padding:12px 16px; border-radius:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; cursor:pointer; }
+    main{ display:flex; justify-content:center; padding:12px; }
+    .wrap{
+      width:100%;
+      max-width:900px;
+      background:rgba(11,18,34,0.92);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+    }
+
+    h2{
+      margin:16px 0 6px;
+      font-size:14px;
+      text-transform:uppercase;
+      color:#b9d3ff;
+      border-bottom:2px solid #1f3b69;
+      padding-bottom:4px;
+    }
+    .grid{
+      display:grid;
+      gap:8px;
+      grid-template-columns: repeat(1, 1fr); /* móvil */
+    }
+    @media (min-width:600px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width:900px){
+      .grid{ grid-template-columns: repeat(3, 1fr); }
+    }
+    .card{
+      background:#111827;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    label{
+      font-size:11px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      color:#9cc2ff;
+    }
+    input, select, textarea{
+      width:100%;
+      padding:7px 8px;
+      border-radius:8px;
+      border:1px solid #2a3955;
+      background:#f8fafc;
+      color:#0b1222;
+      font-size:13px;
+      outline:none;
+    }
+    textarea{ min-height:64px; resize:vertical; }
+
+    .full{ grid-column:1 / -1; }
+
+    #message{
+      margin-top:12px;
+      text-align:center;
+      font-weight:700;
+      color:#bfe5ff;
+      min-height:24px;
+    }
+
+    /* Botones en columna, centrados */
+    .actions{
+      width:90%;
+      max-width:400px;
+      margin:16px auto;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+    }
+    .btn{
+      width:100%;
+      background:var(--primary);
+      border:1px solid var(--primary-2);
+      color:#fff;
+      padding:12px 16px;
+      border-radius:10px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.6px;
+      cursor:pointer;
+    }
     .btn.secondary{ background:#BDB76B; border-color:#BDB76B; color:#000; }
     .btn.ok{ background:#006400; border-color:#004d00; }
     .btn.warn{ background:#0000FF; border-color:#0000c8; }
     .mini{ display:none; }
-  
-:root{
-  --bg:#0f172a; --panel:#0b1222; --text:#e5e7eb; --border:#243042;
-  --primary:#2563eb; --primary-2:#1d4ed8;
-}
-*{ box-sizing:border-box; }
-body{
-  margin:0;
-  font-family:Segoe UI, Roboto, Arial, sans-serif;
-  background:#0f172a url('fondo_policia.jpg') no-repeat center center fixed;
-  background-size:cover;
-  color:var(--text);
-}
-header{ padding:12px; text-align:center; background:rgba(0,0,0,0.6); }
-h1{ margin:0; font-size:20px; }
-
-main{ display:flex; justify-content:center; padding:12px; }
-.wrap{
-  width:100%;
-  max-width:900px;
-  background:rgba(11,18,34,0.92);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:14px;
-}
-
-h2{
-  margin:16px 0 6px;
-  font-size:14px;
-  text-transform:uppercase;
-  color:#b9d3ff;
-  border-bottom:2px solid #1f3b69;
-  padding-bottom:4px;
-}
-.grid{
-  display:grid;
-  gap:8px;
-  grid-template-columns: repeat(1, 1fr); /* 🔥 móvil: 1 columna */
-}
-@media (min-width:600px){
-  .grid{ grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width:900px){
-  .grid{ grid-template-columns: repeat(3, 1fr); }
-}
-.card{
-  background:#111827;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-label{
-  font-size:11px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.4px;
-  color:#9cc2ff;
-}
-input, select, textarea{
-  width:100%;
-  padding:7px 8px;
-  border-radius:8px;
-  border:1px solid #2a3955;
-  background:#f8fafc;
-  color:#0b1222;
-  font-size:13px;
-  outline:none;
-}
-textarea{ min-height:64px; resize:vertical; }
-
-.full{ grid-column:1 / -1; }
-
-#message{
-  margin-top:12px;
-  text-align:center;
-  font-weight:700;
-  color:#bfe5ff;
-  min-height:24px;
-}
-
-/* Botones en columna, centrados */
-.actions{
-  width:90%;
-  max-width:400px;
-  margin:16px auto;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-}
-.btn{
-  width:100%;
-  background:var(--primary);
-  border:1px solid var(--primary-2);
-  color:#fff;
-  padding:12px 16px;
-  border-radius:10px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.6px;
-  cursor:pointer;
-}
-.btn.secondary{ background:#BDB76B; border-color:#BDB76B; color:#000; }
-.btn.ok{ background:#006400; border-color:#004d00; }
-.btn.warn{ background:#0000FF; border-color:#0000c8; }
-.mini{ display:none; }
-
-:root{
-  --bg:#0f172a; --panel:#0b1222; --text:#e5e7eb; --border:#243042;
-  --primary:#2563eb; --primary-2:#1d4ed8;
-}
-*{ box-sizing:border-box; }
-body{
-  margin:0;
-  font-family:Segoe UI, Roboto, Arial, sans-serif;
-  background:#0f172a url('fondo_policia.jpg') no-repeat center center fixed;
-  background-size:cover;
-  color:var(--text);
-}
-header{ padding:12px; text-align:center; background:rgba(0,0,0,0.6); }
-h1{ margin:0; font-size:20px; }
-
-main{ display:flex; justify-content:center; padding:12px; }
-.wrap{
-  width:100%;
-  max-width:900px;
-  background:rgba(11,18,34,0.92);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:14px;
-}
-
-h2{
-  margin:16px 0 6px;
-  font-size:14px;
-  text-transform:uppercase;
-  color:#b9d3ff;
-  border-bottom:2px solid #1f3b69;
-  padding-bottom:4px;
-}
-.grid{
-  display:grid;
-  gap:8px;
-  grid-template-columns: repeat(1, 1fr); /* 🔥 móvil: 1 columna */
-}
-@media (min-width:600px){
-  .grid{ grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width:900px){
-  .grid{ grid-template-columns: repeat(3, 1fr); }
-}
-.card{
-  background:#111827;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-label{
-  font-size:11px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.4px;
-  color:#9cc2ff;
-}
-input, select, textarea{
-  width:100%;
-  padding:7px 8px;
-  border-radius:8px;
-  border:1px solid #2a3955;
-  background:#f8fafc;
-  color:#0b1222;
-  font-size:13px;
-  outline:none;
-}
-textarea{ min-height:64px; resize:vertical; }
-
-.full{ grid-column:1 / -1; }
-
-#message{
-  margin-top:12px;
-  text-align:center;
-  font-weight:700;
-  color:#bfe5ff;
-  min-height:24px;
-}
-
-/* Botones en columna, centrados */
-.actions{
-  width:90%;
-  max-width:400px;
-  margin:16px auto;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-}
-.btn{
-  width:100%;
-  background:var(--primary);
-  border:1px solid var(--primary-2);
-  color:#fff;
-  padding:12px 16px;
-  border-radius:10px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.6px;
-  cursor:pointer;
-}
-.btn.secondary{ background:#BDB76B; border-color:#BDB76B; color:#000; }
-.btn.ok{ background:#006400; border-color:#004d00; }
-.btn.warn{ background:#0000FF; border-color:#0000c8; }
-.mini{ display:none; }
-
-
-</style>
+  </style>
 </head>
 <body>
   <header><h1>RESUMEN OPERATIVO ARCHIVA (R.O.A.)</h1></header>
@@ -369,7 +257,7 @@ textarea{ min-height:64px; resize:vertical; }
   </div>
 
 <script>
-/* ===================== Helpers (MISMA lógica que registro) ===================== */
+/* ===================== Helpers ===================== */
 function normalizeKey(str){
   return str
     ? str.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"").trim()
@@ -416,7 +304,7 @@ function setNumeroDocumentoDesdeExcel(v){
   if(el) el.value=(v??"").toString().trim();
 }
 
-/* ===================== Carga Excel (idéntica al registro, precisa) ===================== */
+/* ===================== Carga Excel (envuelta con ensureXLSX) ===================== */
 function rowsToPairs(rows){
   if (!Array.isArray(rows) || !rows.length) return [];
   const clean = rows.map(r => (Array.isArray(r)? r:[]).map(c => String(c ?? '').trim()));
@@ -445,139 +333,130 @@ function cargarExcel() {
   input.value = null;
   input.click();
 
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  input.onchange = (e) => {
+    ensureXLSX(async function () {   // 🔥 iOS: garantiza XLSX
+      const file = e.target.files[0];
+      if (!file) return;
 
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval:"" });
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval:"" });
 
-      // index por nombre normalizado
-      const inputsByNorm = new Map();
-      document.querySelectorAll("[name]").forEach(el=>{
-        inputsByNorm.set(normalizeKey(el.name), el);
-      });
+        const inputsByNorm = new Map();
+        document.querySelectorAll("[name]").forEach(el=>{
+          inputsByNorm.set(normalizeKey(el.name), el);
+        });
 
-      let rellenados = 0;
+        let rellenados = 0;
 
-      rows.forEach(([pregunta, respuesta]) => {
-        if (!pregunta) return;
-        const qNorm = normalizeKey(pregunta);
-        let r = respuesta;
+        rows.forEach(([pregunta, respuesta]) => {
+          if (!pregunta) return;
+          const qNorm = normalizeKey(pregunta);
+          let r = respuesta;
 
-        // normaliza valor
-        if (typeof r === "number") r = ddmmyyyy_from_excel(r);
-        else r = (r || "").toString().trim();
+          if (typeof r === "number") r = ddmmyyyy_from_excel(r);
+          else r = (r || "").toString().trim();
 
-        // APELLIDOS (juntos → separar)
-        if (qNorm === "APELLIDOS" || qNorm === "APELLIDOSCOMPLETOS") {
-          const {primer, segundo} = separarApellidos(r);
-          const a1 = inputsByNorm.get(normalizeKey("PRIMER APELLIDO"));
-          const a2 = inputsByNorm.get(normalizeKey("SEGUNDO APELLIDO"));
-          if (a1){ a1.value = primer; rellenados++; }
-          if (a2){ a2.value = segundo; rellenados++; }
-          return;
-        }
-        // Apellido 1 / 2 explícitos
-        if (qNorm === "PRIMERAPELLIDO" || qNorm === "APELLIDO1" || qNorm === "1ºAPELLIDO"){
-          const el = inputsByNorm.get(normalizeKey("PRIMER APELLIDO"));
-          if (el){ el.value = r; rellenados++; }
-          return;
-        }
-        if (qNorm === "SEGUNDOAPELLIDO" || qNorm === "APELLIDO2" || qNorm === "2ºAPELLIDO"){
-          const el = inputsByNorm.get(normalizeKey("SEGUNDO APELLIDO"));
-          if (el){ el.value = r; rellenados++; }
-          return;
-        }
-
-        // DNI / NIE / PASAPORTE y número
-        if (qNorm === "DNI") { setTipoDocumentoDesdeExcel("DNI"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
-        if (qNorm === "NIE") { setTipoDocumentoDesdeExcel("NIE"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
-        if (qNorm === "PASAPORTE") { setTipoDocumentoDesdeExcel("PASAPORTE"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
-        if (qNorm === "NUMERODEDOCUMENTO" || qNorm === "NºDOCUMENTO" || qNorm === "NDOC" || qNorm === "NDOCUMENTO"){
-          setNumeroDocumentoDesdeExcel(r); rellenados++; return;
-        }
-        if (qNorm === "TIPODOCUMENTO" || qNorm === "TIPODEDOCUMENTO"){
-          setTipoDocumentoDesdeExcel(r); rellenados++; return;
-        }
-
-        // Sexo (H/M)
-        if (qNorm === "SEXO" || qNorm === "GENERO" || qNorm === "GÉNERO"){
-          const sel = document.getElementById("sexo");
-          if (sel){
-            const U = r.toUpperCase();
-            sel.value = (U.startsWith("H") || U.includes("MASC")) ? "H" : (U.startsWith("M") || U.includes("FEM")) ? "M" : "";
-            if (sel.value) rellenados++;
+          if (qNorm === "APELLIDOS" || qNorm === "APELLIDOSCOMPLETOS") {
+            const {primer, segundo} = separarApellidos(r);
+            const a1 = inputsByNorm.get(normalizeKey("PRIMER APELLIDO"));
+            const a2 = inputsByNorm.get(normalizeKey("SEGUNDO APELLIDO"));
+            if (a1){ a1.value = primer; rellenados++; }
+            if (a2){ a2.value = segundo; rellenados++; }
+            return;
           }
-          return;
-        }
+          if (qNorm === "PRIMERAPELLIDO" || qNorm === "APELLIDO1" || qNorm === "1ºAPELLIDO"){
+            const el = inputsByNorm.get(normalizeKey("PRIMER APELLIDO"));
+            if (el){ el.value = r; rellenados++; }
+            return;
+          }
+          if (qNorm === "SEGUNDOAPELLIDO" || qNorm === "APELLIDO2" || qNorm === "2ºAPELLIDO"){
+            const el = inputsByNorm.get(normalizeKey("SEGUNDO APELLIDO"));
+            if (el){ el.value = r; rellenados++; }
+            return;
+          }
 
-        // Fechas exactas por name
-        const fechaTargets = ["FECHA DE NACIMIENTO","FECHA DILIGENCIAS","FECHA DE CUMPLIMENTACION"];
-        if (fechaTargets.some(t => normalizeKey(t) === qNorm)) {
-          const el = inputsByNorm.get(qNorm);
-          if (el){ el.value = ddmmyyyy_from_excel(r); rellenados++; }
-          return;
-        }
-        // Extra: FECHA GENERACION → FECHA DILIGENCIAS
-        if (qNorm === "FECHAGENERACION" || qNorm === "FECHADEGENERACION") {
-          const el = inputsByNorm.get(normalizeKey("FECHA DILIGENCIAS"));
-          if (el){ el.value = ddmmyyyy_from_excel(r); rellenados++; }
-          return;
-        }
+          if (qNorm === "DNI") { setTipoDocumentoDesdeExcel("DNI"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
+          if (qNorm === "NIE") { setTipoDocumentoDesdeExcel("NIE"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
+          if (qNorm === "PASAPORTE") { setTipoDocumentoDesdeExcel("PASAPORTE"); setNumeroDocumentoDesdeExcel(r); rellenados++; return; }
+          if (qNorm === "NUMERODEDOCUMENTO" || qNorm === "NºDOCUMENTO" || qNorm === "NDOC" || qNorm === "NDOCUMENTO"){
+            setNumeroDocumentoDesdeExcel(r); rellenados++; return;
+          }
+          if (qNorm === "TIPODOCUMENTO" || qNorm === "TIPODEDOCUMENTO"){
+            setTipoDocumentoDesdeExcel(r); rellenados++; return;
+          }
 
-        // Domicilio de registro → DOMICILIOS
-        if (qNorm === "DOMICILIO" || qNorm === "Domicilio") {
-          const el = inputsByNorm.get(normalizeKey("DOMICILIOS"));
-          if (el){ el.value = r; rellenados++; }
-          return;
-        }
-
-        // País = Nacionalidad si no hay País
-        if (qNorm === "NACIONALIDAD") {
-          const elNac = inputsByNorm.get(normalizeKey("NACIONALIDAD"));
-          if (elNac){ elNac.value = r; rellenados++; }
-          const elPais = inputsByNorm.get(normalizeKey("PAÍS")) || inputsByNorm.get(normalizeKey("PAIS"));
-          if (elPais && !elPais.value){ elPais.value = r; rellenados++; }
-          return;
-        }
-
-
-        // Asignación genérica 1:1 por NAME
-        const el = inputsByNorm.get(qNorm);
-        if (el){
-          if (el.tagName === "SELECT") {
-            let matched = false;
-            for (const opt of el.options) {
-              if (normalizeKey(opt.value) === normalizeKey(r) || normalizeKey(opt.text) === normalizeKey(r)) {
-                el.value = opt.value; matched = true; break;
-              }
+          if (qNorm === "SEXO" || qNorm === "GENERO" || qNorm === "GÉNERO"){
+            const sel = document.getElementById("sexo");
+            if (sel){
+              const U = r.toUpperCase();
+              sel.value = (U.startsWith("H") || U.includes("MASC")) ? "H" : (U.startsWith("M") || U.includes("FEM")) ? "M" : "";
+              if (sel.value) rellenados++;
             }
-            if (!matched) el.value = r;
-          } else {
-            el.value = r;
+            return;
           }
-          rellenados++;
-        }
-      });
 
-      document.getElementById("message").innerText = "✅ XLSX cargado: " + rellenados + " campos asignados";
-    } catch (err) {
-      console.error(err);
-      document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err?.message || err);
-    }
+          const fechaTargets = ["FECHA DE NACIMIENTO","FECHA DILIGENCIAS","FECHA DE CUMPLIMENTACION"];
+          if (fechaTargets.some(t => normalizeKey(t) === qNorm)) {
+            const el = inputsByNorm.get(qNorm);
+            if (el){ el.value = ddmmyyyy_from_excel(r); rellenados++; }
+            return;
+          }
+          if (qNorm === "FECHAGENERACION" || qNorm === "FECHADEGENERACION") {
+            const el = inputsByNorm.get(normalizeKey("FECHA DILIGENCIAS"));
+            if (el){ el.value = ddmmyyyy_from_excel(r); rellenados++; }
+            return;
+          }
+
+          if (qNorm === "DOMICILIO" || qNorm === "DOMICILIOS" || qNorm === "DIRECCION" || qNorm === "DIRECCIÓN") {
+            const el = inputsByNorm.get(normalizeKey("DOMICILIOS"));
+            if (el){ el.value = r; rellenados++; }
+            return;
+          }
+
+          if (qNorm === "NACIONALIDAD") {
+            const elNac = inputsByNorm.get(normalizeKey("NACIONALIDAD"));
+            if (elNac){ elNac.value = r; rellenados++; }
+            const elPais = inputsByNorm.get(normalizeKey("PAÍS")) || inputsByNorm.get(normalizeKey("PAIS"));
+            if (elPais && !elPais.value){ elPais.value = r; rellenados++; }
+            return;
+          }
+
+          const el = inputsByNorm.get(qNorm);
+          if (el){
+            if (el.tagName === "SELECT") {
+              let matched = false;
+              for (const opt of el.options) {
+                if (normalizeKey(opt.value) === normalizeKey(r) || normalizeKey(opt.text) === normalizeKey(r)) {
+                  el.value = opt.value; matched = true; break;
+                }
+              }
+              if (!matched) el.value = r;
+            } else {
+              el.value = r;
+            }
+            rellenados++;
+          }
+        });
+
+        document.getElementById("message").innerText = "✅ XLSX cargado: " + rellenados + " campos asignados";
+      } catch (err) {
+        console.error(err);
+        document.getElementById("message").innerText = "❌ Error al cargar XLSX: " + (err?.message || err);
+      }
+    });
   };
 }
+</script>
 
-/* ===================== ODT (preciso + anti-acentos + anti-tags) ===================== */
+<script>
+/* ===================== ODT (igual que tenías) ===================== */
 function quitarAcentos(s){ return s.normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 function escRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
 function buildFlexibleRegex(key){
   const chars = quitarAcentos(key).toUpperCase().split("").map(escRegex);
-  // permite espacios, &nbsp; y CUALQUIER etiqueta entre letras del placeholder
   const SEP = String.raw`(?:\s|&nbsp;|<[^>]+>)*`;
   const inner = chars.join(SEP);
   return new RegExp(String.raw`\{\{${SEP}(?:${inner})${SEP}\}\}`,"g");
@@ -585,44 +464,31 @@ function buildFlexibleRegex(key){
 
 function buildODTDataUpper(){
   const data = {};
-  // siempre en mayúsculas
   document.querySelectorAll("[name]").forEach(el=>{
     data[el.name.toUpperCase()] = el.value ?? "";
   });
 
-  // Tipo documento coherente con "OTRO"
   const sel  = document.getElementById('tipoDocumento');
   const otro = document.getElementById('tipoDocumentoOtro');
-  if(sel){
-    data["TIPO DOCUMENTO"] = (sel.value==="OTRO" ? (otro?.value||"") : sel.value);
-  }
+  if(sel){ data["TIPO DOCUMENTO"] = (sel.value==="OTRO" ? (otro?.value||"") : sel.value); }
 
-  // Número de documento y Sexo (H/M)
   const num  = document.getElementById('numeroDocumento');
   const sexo = document.getElementById('sexo');
   if(num)  data["NÚMERO DE DOCUMENTO"] = num.value;
   if(sexo) data["SEXO"] = sexo.value;
 
-  // PAÍS
   if ((!data["PAÍS"] || !data["PAÍS"].trim()) && data["NACIONALIDAD"]) {
     data["PAÍS"] = data["NACIONALIDAD"];
     data["PAIS"] = data["NACIONALIDAD"];
   }
-
-  // PROVINCIA (mismo patrón que PAÍS)
   if ((!data["PROVINCIA"] || !data["PROVINCIA"].trim()) && data["NACIONALIDAD"]) {
     data["PROVINCIA"] = data["NACIONALIDAD"];
   }
-
-  // PROFESIÓN alias
   if (data["PROFESIÓN"] == null && data["PROFESION"] != null) data["PROFESIÓN"] = data["PROFESION"];
   if (data["PROFESION"] == null && data["PROFESIÓN"] != null) data["PROFESION"] = data["PROFESIÓN"];
-
-  // NÚMERO DE DOCUMENTO alias
   if (data["NUMERO DE DOCUMENTO"] == null && data["NÚMERO DE DOCUMENTO"] != null) data["NUMERO DE DOCUMENTO"] = data["NÚMERO DE DOCUMENTO"];
   if (data["NÚMERO DE DOCUMENTO"] == null && data["NUMERO DE DOCUMENTO"] != null) data["NÚMERO DE DOCUMENTO"] = data["NUMERO DE DOCUMENTO"];
 
-  // Mayúsculas finales para plantilla
   const upper = {};
   for (const k in data) upper[k] = String(data[k] ?? "").toUpperCase();
   return upper;
@@ -633,31 +499,23 @@ async function generarODTUint8(base64, dataUpper){
   const zip = await JSZip.loadAsync(bytes);
   let xml = await zip.file("content.xml").async("string");
 
-  // 1) Reemplazo EXACTO {{CLAVE}} y {{CLAVE SIN ACENTOS}}
   for (const k in dataUpper){
     const v = (dataUpper[k] ?? "").toString();
-
     const rxExact = new RegExp("\\{\\{\\s*" + escRegex(k) + "\\s*\\}\\}","g");
     xml = xml.replace(rxExact, v);
-
     const kNoAcc = quitarAcentos(k).toUpperCase();
     if (kNoAcc !== k){
       const rxNoAcc = new RegExp("\\{\\{\\s*" + escRegex(kNoAcc) + "\\s*\\}\\}","g");
       xml = xml.replace(rxNoAcc, v);
     }
   }
-
-  // 2) Reemplazo FLEXIBLE por si el ODT ha partido el placeholder con etiquetas
   for (const k in dataUpper){
     const v = (dataUpper[k] ?? "").toString();
     const flex = buildFlexibleRegex(k);
     xml = xml.replace(flex, v);
-
     const flexNoAcc = buildFlexibleRegex(quitarAcentos(k));
     xml = xml.replace(flexNoAcc, v);
   }
-
-  // 3) Limpia placeholders restantes
   xml = xml.replace(/{{\s*[^}]+\s*}}/g,"");
 
   zip.file("content.xml", xml);
@@ -667,7 +525,6 @@ async function generarODTUint8(base64, dataUpper){
 async function generarROA(){
   const msg=document.getElementById("message");
   try{
-    // Obtiene plantilla desde plantilla_roa.js
     const plantilla =
       (typeof window !== 'undefined' && window.PLANTILLA_ROA && window.PLANTILLA_ROA.length) ? window.PLANTILLA_ROA :
       (window.PLANTILLAS && window.PLANTILLAS.roa) ? window.PLANTILLAS.roa :

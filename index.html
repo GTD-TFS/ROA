@@ -11,34 +11,7 @@
   <script src="./xlsx.full.min.js"></script>
   <script src="./plantilla_roa.js"></script>
 
-  <!-- Loader robusto para iOS/SAFARI: asegura XLSX antes de usar -->
-  <script>
-  (function () {
-    function loadScript(src, ok, fail){
-      var s=document.createElement('script');
-      s.src=src; s.onload=ok; s.onerror=fail||function(){};
-      document.head.appendChild(s);
-    }
-    // Llama a cb SOLO cuando window.XLSX ya existe. Reintenta y hace fallback a CDN.
-    window.ensureXLSX = function (cb){
-      if (window.XLSX) { cb(); return; }
-      let tries = 0;
-      (function waitForLocal(){
-        if (window.XLSX){ cb(); return; }
-        if (tries++ < 10){ return setTimeout(waitForLocal, 50); }
-        // Reintento local explícito
-        loadScript('./xlsx.full.min.js', function(){ cb(); }, function(){
-          // Fallback CDN
-          loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', function(){ cb(); }, function(){
-            var m=document.getElementById('message');
-            if(m) m.innerText='❌ No se pudo cargar XLSX (local ni CDN).';
-          });
-        });
-      })();
-    };
-  })();
-  </script>
-
+  
   <style>
     :root{
       --bg:#0f172a; --panel:#0b1222; --text:#e5e7eb; --border:#243042;
@@ -330,13 +303,12 @@ function rowsToPairs(rows){
 
 function cargarExcel() {
   const input = document.getElementById("fileInputXLSX");
-  input.value = null;
+  input.value = null;        // permitir recargar el mismo archivo
   input.click();
 
-  input.onchange = (e) => {
-    ensureXLSX(async function () {   // 🔥 iOS: garantiza XLSX
-      const file = e.target.files[0];
-      if (!file) return;
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
       try {
         const data = await file.arrayBuffer();

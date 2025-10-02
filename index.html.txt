@@ -210,7 +210,7 @@
     <button class="btn warn"      type="button" style="background:#0000FF" onclick="refrescarFuerte()">⟲ Refrescar</button>
   </div>
 
-  <!-- Normalizador de placeholders: ahora en DOMContentLoaded para no “comerse” el resto -->
+  <!-- Normalizador de placeholders en caso de plantillas "rotas" -->
   <script>
     window.addEventListener('DOMContentLoaded', function(){
       (function () {
@@ -247,7 +247,7 @@
     });
   </script>
 
-  <!-- Script principal (tu lógica intacta, con cargarExcel robusto y fallback XLSX) -->
+  <!-- Script principal -->
   <script>
   async function refrescarFuerte(){
     try{
@@ -261,6 +261,40 @@
       }
     }catch(e){}
     window.location.reload();
+  }
+
+  // ===== Heurística robusta para separar apellidos =====
+  function separarApellidos(apellidosRaw){
+    const s = String(apellidosRaw || "").trim().replace(/\s+/g,' ');
+    if (!s) return {primer:'', segundo:''};
+    if (s.includes('-')) { // respeta compuestos con guion
+      const [izq, der] = s.split('-');
+      const L = izq.trim(), R = (der||'').trim();
+      if (!R) return {primer: s.trim(), segundo: ''};
+      return {primer: L, segundo: R};
+    }
+    const PARTICULAS = new Set(['DE','DEL','LA','LAS','LOS','DA','DOS','DO','VON','VAN','DI','DELA','DELAS','DELOS']);
+    const palabras = s.split(' ');
+    const up = palabras.map(p=>p.toUpperCase());
+    const cap = arr => arr.map((w)=>{
+      const u = w.toUpperCase();
+      if (PARTICULAS.has(u) || u==='DELA' || u==='DELOS' || u==='DELAS')
+        return (u==='DELA')?'De la':(u==='DELOS')?'De los':(u==='DELAS')?'De las':w.toLowerCase();
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+    if (up.length === 1) return {primer: cap([palabras[0]]), segundo:''};
+    if (up.length === 2) return {primer: cap([palabras[0]]), segundo: cap([palabras[1]])};
+    if (PARTICULAS.has(up[0])){ // empieza por partícula
+      let i = 0; while (i < up.length && PARTICULAS.has(up[i])) i++;
+      const corte = Math.min(up.length-1, i+1);
+      return {primer: cap(palabras.slice(0,corte)), segundo: cap(palabras.slice(corte))};
+    }
+    if (PARTICULAS.has(up[1])){ // segunda es partícula
+      let j = 1; while (j < up.length && PARTICULAS.has(up[j])) j++;
+      const corte = Math.min(up.length-1, j+1);
+      return {primer: cap(palabras.slice(0,corte)), segundo: cap(palabras.slice(corte))};
+    }
+    return {primer: cap([palabras[0]]), segundo: cap(palabras.slice(1))};
   }
 
   // ============ Helpers ============
@@ -289,9 +323,10 @@
     return s;
   }
 
-  // ============ Aliases Excel ============
+  // ============ Aliases Excel (para evitar "can't find") ============
   const FIELD_ALIASES = new Map([
     ["NOMBRE","NOMBRE"],["NOMBRES","NOMBRE"],
+    ["APELLIDOS","APELLIDOS"],
     ["LUGARDENACIMIENTO","LUGAR DE NACIMIENTO"],["LUGARNACIMIENTO","LUGAR DE NACIMIENTO"],
     ["NACIONALIDAD","NACIONALIDAD"],
     ["NOMBREDELOSPADRES","NOMBRE DE LOS PADRES"],["NOMBRESDELOSPADRES","NOMBRE DE LOS PADRES"],["NOMBRESPADRES","NOMBRE DE LOS PADRES"],["PADRES","NOMBRE DE LOS PADRES"],
@@ -299,7 +334,9 @@
     ["DOMICILIO","DOMICILIOS"],["DOMICILIOS","DOMICILIOS"],
     ["DILIGENCIAS","DILIGENCIAS"],["RESUMENDILIGENCIAS","RESUMEN DILIGENCIAS"],["FECHADILIGENCIAS","FECHA DILIGENCIAS"],
     ["NUMERODEDOCUMENTO","NUMERO DE DOCUMENTO"],["NDOCUMENTO","NÚMERO DE DOCUMENTO"],["NDOC","NÚMERO DE DOCUMENTO"],
-    ["FECHADENACIMIENTO","FECHA DE NACIMIENTO"],["NACIMIENTOFECHA","FECHA DE NACIMIENTO"],["FECHADECUMPLIMENTACION","FECHA DE CUMPLIMENTACION"],
+    ["NºDOCUMENTO","NÚMERO DE DOCUMENTO"],["Nº DOCUMENTO","NÚMERO DE DOCUMENTO"],["N DOCUMENTO","NÚMERO DE DOCUMENTO"],
+    ["FECHADENACIMIENTO","FECHA DE NACIMIENTO"],["NACIMIENTOFECHA","FECHA DE NACIMIENTO"],
+    ["FECHADECUMPLIMENTACION","FECHA DE CUMPLIMENTACION"],
   ]);
   function findFieldByKey(key){
     if(!key) return null;
@@ -350,7 +387,7 @@
     el.value = (valor ?? "").toString().trim();
   }
 
-  // ============ Lectura Excel (robusto con fallback XLSX) ============
+  // ============ Lectura Excel (robusta con fallback XLSX) ============
   function rowsToPairs(rows){
     if(!Array.isArray(rows) || !rows.length) return [];
     const nonEmptyLens = rows.map(r => (Array.isArray(r)? r : []).filter(c => String(c ?? '').trim() !== '').length);
@@ -399,7 +436,7 @@
               const key = String(campo).trim();
               let v = valor;
 
-              if (isKey(key, ["SEXO","GENERO"])) {
+              if (isKey(key, ["SEXO","GENERO","GÉNERO"])) {
                 const val = String(v || "").trim().toUpperCase();
                 const el = document.getElementById("sexo");
                 if (el) {
@@ -429,11 +466,11 @@
               if (isKey(key, ["APELLIDOS"])) {
                 const s = String(v||"").trim();
                 if (s) {
-                  const partes = s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
+                  const {primer, segundo} = separarApellidos(s);
                   const primero = findFieldByName("PRIMER APELLIDO");
-                  const segundo  = findFieldByName("SEGUNDO APELLIDO");
-                  if (primero){ primero.value = (partes[0]||""); rellenados++; }
-                  if (segundo){ segundo.value = (partes[1]||""); rellenados++; }
+                  const segundoEl  = findFieldByName("SEGUNDO APELLIDO");
+                  if (primero){ primero.value = primer; rellenados++; }
+                  if (segundoEl){ segundoEl.value = segundo; rellenados++; }
                 }
                 continue;
               }
@@ -621,7 +658,7 @@
       const dataUpper = {};
       for(const k in data){ dataUpper[k] = U(data[k]); }
 
-      // Aliases directos / variantes
+      // Aliases útiles
       dataUpper["PAÍS"] = dataUpper["PAÍS"] || dataUpper["PAIS"] || "";
       dataUpper["PAIS"] = dataUpper["PAIS"] || dataUpper["PAÍS"] || "";
       dataUpper["PROFESIÓN"] = dataUpper["PROFESIÓN"] || dataUpper["PROFESION"] || "";
@@ -685,6 +722,57 @@
       document.getElementById("message").innerText = "❌ Error al generar R.O.A.: " + (err?.message || err);
     }
   }
+
+  // === Precarga desde Registro (sessionStorage) o ?f=... ===
+  (function precargaDesdeRegistro(){
+    function getFromQS(){
+      try{
+        const p = new URLSearchParams(location.search);
+        const raw = p.get('f'); if(!raw) return null;
+        return JSON.parse(decodeURIComponent(raw));
+      }catch{ return null; }
+    }
+    let fili = null;
+    try{
+      const raw = sessionStorage.getItem('roa_filiacion');
+      if (raw){ fili = JSON.parse(raw); sessionStorage.removeItem('roa_filiacion'); }
+    }catch{}
+    if (!fili) fili = getFromQS();
+    if (!fili) return;
+
+    const set = (name,val)=>{ const el = findFieldByName(name); if (el && val!=null) el.value = val; };
+
+    set("NOMBRE", fili.nombre || fili.NOMBRE || '');
+    const apFull = fili.apellidos || fili.APELLIDOS || [fili["PRIMER APELLIDO"], fili["SEGUNDO APELLIDO"]].filter(Boolean).join(' ');
+    const {primer, segundo} = separarApellidos(apFull);
+    set("PRIMER APELLIDO", primer || fili["PRIMER APELLIDO"] || '');
+    set("SEGUNDO APELLIDO", segundo || fili["SEGUNDO APELLIDO"] || '');
+
+    if (fili.tipoDocumento || fili["TIPO DOCUMENTO"]){
+      setTipoDocumentoDesdeExcel(fili.tipoDocumento || fili["TIPO DOCUMENTO"]);
+    }
+    if (fili.numeroDocumento || fili["NÚMERO DE DOCUMENTO"] || fili["NUMERO DE DOCUMENTO"]){
+      setNumeroDocumentoDesdeExcel(fili.numeroDocumento || fili["NÚMERO DE DOCUMENTO"] || fili["NUMERO DE DOCUMENTO"]);
+    }
+
+    if (typeof fili.sexo !== 'undefined' || typeof fili.SEXO !== 'undefined'){
+      const el = document.getElementById('sexo');
+      const val = String(fili.sexo || fili.SEXO || '').toUpperCase();
+      if (el){
+        el.value = (val.startsWith('H')||val.includes('MASC'))?'H':(val.startsWith('M')||val.includes('FEM'))?'M':'';
+      }
+    }
+
+    set("NACIONALIDAD", fili.nacionalidad || fili.NACIONALIDAD || '');
+    set("LUGAR DE NACIMIENTO", fili.lugarNacimiento || fili["LUGAR DE NACIMIENTO"] || '');
+    set("PROVINCIA", fili.PROVINCIA || '');
+    set("PAÍS", fili.PAIS || fili["PAÍS"] || '');
+    set("DOMICILIOS", fili.domicilio || fili.DOMICILIO || fili.DOMICILIOS || '');
+    set("TELÉFONO", fili.telefono || fili["TELÉFONO"] || fili.TELEFONO || '');
+
+    const toDDMMYYYY = ddmmyyyy_from_excel;
+    if (fili.fechaNacimiento || fili["FECHA DE NACIMIENTO"]) set("FECHA DE NACIMIENTO", toDDMMYYYY(fili.fechaNacimiento || fili["FECHA DE NACIMIENTO"]));
+  })();
 
   // Inicial
   window.addEventListener("DOMContentLoaded", function(){

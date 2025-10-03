@@ -67,6 +67,35 @@
     .btn.ok{ background:#008B8B; border-color:#004d00; }
     .btn.warn{ background:#0000FF; border-color:#0000c8; }
     .mini{ display:none; }
+.btn.danger{ background:darkred; border-color:#6b0000; color:#fff; }
+.btn.danger:hover{ filter:brightness(1.05); }
+
+    /* contenedor principal algo más translúcido */
+.wrap{
+  width:100%; max-width:900px;
+  background:rgba(11,18,34,0.60); /* antes ~0.92 */
+  border:1px solid var(--border); border-radius:12px; padding:14px;
+}
+
+/* tarjetas más translúcidas */
+.card{
+  background:rgba(17,24,39,0.45); /* antes opaca */
+  border:1px solid var(--border);
+  border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:4px;
+}
+
+/* inputs y selects translúcidos */
+input, select, textarea{
+  width:100%; padding:7px 8px; border-radius:8px; border:1px solid #2a3955;
+  background:rgba(248,250,252,0.70); /* antes sólido */
+  color:#0b1222; font-size:13px; outline:none;
+}
+
+/* al enfocar, un pelín más opacos para legibilidad */
+input:focus, select:focus, textarea:focus{
+  background:rgba(248,250,252,0.85);
+}
+
   </style>
 </head>
 <body>
@@ -173,6 +202,7 @@
     <button type="button" class="btn secondary" onclick="cargarExcel(event)">📁 Cargar EXCEL</button>
     <button type="button" class="btn ok" onclick="generarROA()">⬇️ Descargar R.O.A.</button>
     <button type="button" class="btn warn" onclick="location.reload()">⟲ Refrescar</button>
+    <button type="button" class="btn danger" onclick="location.href='index.html'">⟲ Iniciar nuevo detenido</button>
   </div>
 
 <script>
